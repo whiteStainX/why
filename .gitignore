@@ -26,3 +26,6 @@ compile_commands.json
 
 # log files
 *.log
+
+# system config files
+/.vscode

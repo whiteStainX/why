@@ -17,7 +17,6 @@ public:
     AnimationManager() = default;
     ~AnimationManager() = default;
 
-    void add_animation(std::unique_ptr<Animation> animation);
     void load_animations(notcurses* nc, const AppConfig& config);
     void update_all(float delta_time,
                     const AudioMetrics& metrics,
@@ -26,7 +25,11 @@ public:
     void render_all(notcurses* nc);
 
 private:
-    std::vector<std::unique_ptr<Animation>> animations_;
+    struct ManagedAnimation {
+        std::unique_ptr<Animation> animation;
+        AnimationConfig config;
+    };
+    std::vector<ManagedAnimation> animations_;
 };
 
 } // namespace animations

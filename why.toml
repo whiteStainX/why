@@ -45,7 +45,12 @@ safe_mode = false
 [[animations]]
 type = "RandomText"
 z_index = 0
+initially_active = false
+trigger_beat_min = 0.1 # Lowered threshold for testing
 
 [[animations]]
 type = "BarVisual"
 z_index = 1
+initially_active = false
+trigger_band_index = 0 # Trigger on the first frequency band
+trigger_threshold = 0.001 # Lowered threshold for testing

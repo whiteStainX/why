@@ -14,10 +14,6 @@ static animations::AnimationManager animation_manager;
 } // namespace
 
 // set_active_animation is removed, AnimationManager handles adding animations
-void add_animation_to_manager(std::unique_ptr<animations::Animation> animation) {
-    animation_manager.add_animation(std::move(animation));
-}
-
 void load_animations_from_config(notcurses* nc, const AppConfig& config) {
     animation_manager.load_animations(nc, config);
 }

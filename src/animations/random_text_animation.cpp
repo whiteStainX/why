@@ -11,10 +11,7 @@ RandomTextAnimation::RandomTextAnimation()
       dist_(0, chars_.size() - 1) {}
 
 void RandomTextAnimation::render(notcurses* nc,
-                                 int grid_rows,
-                                 int grid_cols,
                                  float time_s,
-                                 float sensitivity,
                                  const AudioMetrics& metrics,
                                  const std::vector<float>& bands,
                                  float beat_strength) {

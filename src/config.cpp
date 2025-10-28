@@ -377,31 +377,9 @@ ConfigLoadResult load_app_config(const std::string& path) {
                   result.warnings);
     assign_scalar(raw, "dsp.enable_flux", result.config.dsp.enable_flux, parse_bool, result.warnings);
 
-    assign_scalar(raw, "visual.grid.rows", result.config.visual.grid.rows, parse_int32, result.warnings);
-    assign_scalar(raw, "visual.grid.cols", result.config.visual.grid.cols, parse_int32, result.warnings);
-    assign_scalar(raw, "visual.grid.min", result.config.visual.grid.min_dim, parse_int32, result.warnings);
-    assign_scalar(raw, "visual.grid.max", result.config.visual.grid.max_dim, parse_int32, result.warnings);
 
-    assign_scalar(raw,
-                  "visual.sensitivity.value",
-                  result.config.visual.sensitivity.value,
-                  parse_float32,
-                  result.warnings);
-    assign_scalar(raw,
-                  "visual.sensitivity.min",
-                  result.config.visual.sensitivity.min_value,
-                  parse_float32,
-                  result.warnings);
-    assign_scalar(raw,
-                  "visual.sensitivity.max",
-                  result.config.visual.sensitivity.max_value,
-                  parse_float32,
-                  result.warnings);
-    assign_scalar(raw,
-                  "visual.sensitivity.step",
-                  result.config.visual.sensitivity.step,
-                  parse_float32,
-                  result.warnings);
+
+
 
 
 
@@ -438,24 +416,8 @@ ConfigLoadResult load_app_config(const std::string& path) {
     if (result.config.dsp.hop_size == 0) {
         result.config.dsp.hop_size = std::max<std::size_t>(1, result.config.dsp.fft_size / 4);
     }
-    if (result.config.visual.grid.min_dim < 1) {
-        result.config.visual.grid.min_dim = 1;
-    }
-    if (result.config.visual.grid.max_dim < result.config.visual.grid.min_dim) {
-        result.config.visual.grid.max_dim = result.config.visual.grid.min_dim;
-    }
-    result.config.visual.grid.rows = std::clamp(result.config.visual.grid.rows,
-                                                result.config.visual.grid.min_dim,
-                                                result.config.visual.grid.max_dim);
-    result.config.visual.grid.cols = std::clamp(result.config.visual.grid.cols,
-                                                result.config.visual.grid.min_dim,
-                                                result.config.visual.grid.max_dim);
-    if (result.config.visual.sensitivity.value < result.config.visual.sensitivity.min_value) {
-        result.config.visual.sensitivity.value = result.config.visual.sensitivity.min_value;
-    }
-    if (result.config.visual.sensitivity.value > result.config.visual.sensitivity.max_value) {
-        result.config.visual.sensitivity.value = result.config.visual.sensitivity.max_value;
-    }
+
+
     if (result.config.visual.target_fps <= 0.0) {
         result.config.visual.target_fps = 60.0;
     }

@@ -13,10 +13,7 @@ class Animation {
 public:
     virtual ~Animation() = default;
     virtual void render(notcurses* nc,
-                        int grid_rows,
-                        int grid_cols,
                         float time_s,
-                        float sensitivity,
                         const AudioMetrics& metrics,
                         const std::vector<float>& bands,
                         float beat_strength) = 0;

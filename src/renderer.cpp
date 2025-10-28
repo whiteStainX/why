@@ -17,10 +17,7 @@ void set_active_animation(std::unique_ptr<animations::Animation> animation) {
 }
 
 void render_frame(notcurses* nc,
-               int grid_rows,
-               int grid_cols,
                float time_s,
-               float sensitivity,
                const AudioMetrics& metrics,
                const std::vector<float>& bands,
                float beat_strength,
@@ -36,7 +33,7 @@ void render_frame(notcurses* nc,
     ncplane_erase(stdplane);
 
     if (current_animation) {
-        current_animation->render(nc, grid_rows, grid_cols, time_s, sensitivity, metrics, bands, beat_strength);
+        current_animation->render(nc, time_s, metrics, bands, beat_strength);
     }
 
     // Display overlay metrics if requested
@@ -44,11 +41,9 @@ void render_frame(notcurses* nc,
         ncplane_set_fg_rgb8(stdplane, 200, 200, 200); // White foreground
         ncplane_set_bg_rgb8(stdplane, 0, 0, 0);     // Black background
         ncplane_printf_yx(stdplane, plane_rows - 3, 0,
-                          "Audio %s | Grid: %dx%d | Sens: %.2f",
-                          metrics.active ? (file_stream ? "file" : "capturing") : "inactive",
-                          grid_rows,
-                          grid_cols,
-                          sensitivity);
+                          "Audio %s",
+                          metrics.active ? (file_stream ? "file" : "capturing") : "inactive"
+                        );
 
         ncplane_printf_yx(stdplane, plane_rows - 2, 0,
                           "RMS: %.3f | Peak: %.3f | Dropped: %zu | Beat: %.2f",

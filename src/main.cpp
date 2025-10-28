@@ -123,14 +123,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    int grid_rows = config.visual.grid.rows;
-    int grid_cols = config.visual.grid.cols;
-    const int min_grid_dim = config.visual.grid.min_dim;
-    const int max_grid_dim = config.visual.grid.max_dim;
-    float sensitivity = config.visual.sensitivity.value;
-    const float min_sensitivity = config.visual.sensitivity.min_value;
-    const float max_sensitivity = config.visual.sensitivity.max_value;
-    const float sensitivity_step = config.visual.sensitivity.step;
+
 
     const std::chrono::duration<double> frame_time(1.0 / config.visual.target_fps);
 
@@ -174,10 +167,7 @@ int main(int argc, char** argv) {
         plugin_manager.notify_frame(audio_metrics, dsp.band_energies(), dsp.beat_strength(), time_s);
 
         why::render_frame(nc,
-                       grid_rows,
-                       grid_cols,
                        time_s,
-                       sensitivity,
                        audio_metrics,
                        dsp.band_energies(),
                        dsp.beat_strength(),
@@ -202,31 +192,9 @@ int main(int argc, char** argv) {
                 running = false;
                 break;
             }
-            if (config.runtime.allow_resize && key == NCKEY_UP) {
-                grid_rows = std::min(grid_rows + 1, max_grid_dim);
-                continue;
-            }
-            if (config.runtime.allow_resize && key == NCKEY_DOWN) {
-                grid_rows = std::max(grid_rows - 1, min_grid_dim);
-                continue;
-            }
-            if (config.runtime.allow_resize && key == NCKEY_RIGHT) {
-                grid_cols = std::min(grid_cols + 1, max_grid_dim);
-                continue;
-            }
-            if (config.runtime.allow_resize && key == NCKEY_LEFT) {
-                grid_cols = std::max(grid_cols - 1, min_grid_dim);
-                continue;
-            }
 
-            if (key == '[') {
-                sensitivity = std::max(min_sensitivity, sensitivity - sensitivity_step);
-                continue;
-            }
-            if (key == ']') {
-                sensitivity = std::min(max_sensitivity, sensitivity + sensitivity_step);
-                continue;
-            }
+
+
             if (key == NCKEY_RESIZE) {
                 break;
             }

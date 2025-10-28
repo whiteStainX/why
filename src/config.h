@@ -43,28 +43,10 @@ struct DspConfig {
     bool enable_flux = true;
 };
 
-struct GridConfig {
-    int rows = 16;
-    int cols = 16;
-    int min_dim = 8;
-    int max_dim = 32;
-};
-
-struct SensitivityConfig {
-    float value = 1.0f;
-    float min_value = 0.2f;
-    float max_value = 5.0f;
-    float step = 0.1f;
-};
-
 struct VisualConfig {
-    GridConfig grid;
-    SensitivityConfig sensitivity;
-
-
-
 
     double target_fps = 60.0;
+
 };
 
 struct RuntimeConfig {

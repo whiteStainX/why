@@ -403,11 +403,7 @@ ConfigLoadResult load_app_config(const std::string& path) {
                   parse_float32,
                   result.warnings);
 
-    std::string mode_value;
-    assign_string(raw, "visual.mode", mode_value);
-    if (!mode_value.empty()) {
-        result.config.visual.default_mode = visualization_mode_from_string(mode_value, result.config.visual.default_mode);
-    }
+
     std::string palette_value;
     assign_string(raw, "visual.palette", palette_value);
     if (!palette_value.empty()) {
@@ -474,26 +470,7 @@ ConfigLoadResult load_app_config(const std::string& path) {
     return result;
 }
 
-VisualizationMode visualization_mode_from_string(const std::string& value, VisualizationMode fallback) {
-    std::string lower(value);
-    std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    if (lower == "bands") {
-        return VisualizationMode::Bands;
-    }
-    if (lower == "radial") {
-        return VisualizationMode::Radial;
-    }
-    if (lower == "trails") {
-        return VisualizationMode::Trails;
-    }
-    if (lower == "digital" || lower == "digital_pulse" || lower == "digital-pulse") {
-        return VisualizationMode::Digital;
-    }
-    if (lower == "ascii" || lower == "ascii_flux" || lower == "ascii-flux" || lower == "flux") {
-        return VisualizationMode::Ascii;
-    }
-    return fallback;
-}
+
 
 ColorPalette color_palette_from_string(const std::string& value, ColorPalette fallback) {
     std::string lower(value);

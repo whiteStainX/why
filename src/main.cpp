@@ -132,7 +132,7 @@ int main(int argc, char** argv) {
     const float min_sensitivity = config.visual.sensitivity.min_value;
     const float max_sensitivity = config.visual.sensitivity.max_value;
     const float sensitivity_step = config.visual.sensitivity.step;
-    why::VisualizationMode mode = config.visual.default_mode;
+
     why::ColorPalette palette = config.visual.default_palette;
     const std::chrono::duration<double> frame_time(1.0 / config.visual.target_fps);
 
@@ -176,7 +176,6 @@ int main(int argc, char** argv) {
                        grid_rows,
                        grid_cols,
                        time_s,
-                       mode,
                        palette,
                        sensitivity,
                        audio_metrics,
@@ -219,26 +218,7 @@ int main(int argc, char** argv) {
                 grid_cols = std::max(grid_cols - 1, min_grid_dim);
                 continue;
             }
-            if (key == 'm' || key == 'M') {
-                switch (mode) {
-                case why::VisualizationMode::Bands:
-                    mode = why::VisualizationMode::Radial;
-                    break;
-                case why::VisualizationMode::Radial:
-                    mode = why::VisualizationMode::Trails;
-                    break;
-                case why::VisualizationMode::Trails:
-                    mode = why::VisualizationMode::Digital;
-                    break;
-                case why::VisualizationMode::Digital:
-                    mode = why::VisualizationMode::Ascii;
-                    break;
-                case why::VisualizationMode::Ascii:
-                    mode = why::VisualizationMode::Bands;
-                    break;
-                }
-                continue;
-            }
+
             if (key == 'p' || key == 'P') {
                 switch (palette) {
                 case why::ColorPalette::Rainbow:

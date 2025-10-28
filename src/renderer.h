@@ -8,13 +8,7 @@
 
 namespace why {
 
-enum class VisualizationMode {
-    Bands,
-    Radial,
-    Trails,
-    Digital,
-    Ascii,
-};
+
 
 enum class ColorPalette {
     Rainbow,
@@ -28,7 +22,6 @@ void draw_grid(notcurses* nc,
                int grid_rows,
                int grid_cols,
                float time_s,
-               VisualizationMode mode,
                ColorPalette palette,
                float sensitivity,
                const AudioMetrics& metrics,
@@ -38,7 +31,6 @@ void draw_grid(notcurses* nc,
                bool show_metrics,
                bool show_overlay_metrics);
 
-const char* mode_name(VisualizationMode mode);
 const char* palette_name(ColorPalette palette);
 
 } // namespace why

@@ -8,22 +8,7 @@ namespace why {
 
 // These functions are kept as they might be used by other parts of the application
 // or for future expansion, even if not directly used in the simplified draw_grid.
-const char* mode_name(VisualizationMode mode) {
-    switch (mode) {
-    case VisualizationMode::Bands:
-        return "Bands";
-    case VisualizationMode::Radial:
-        return "Radial";
-    case VisualizationMode::Trails:
-        return "Trails";
-    case VisualizationMode::Digital:
-        return "Digital Pulse";
-    case VisualizationMode::Ascii:
-        return "ASCII Flux";
-    default:
-        return "Unknown";
-    }
-}
+
 
 const char* palette_name(ColorPalette palette) {
     switch (palette) {
@@ -46,7 +31,6 @@ void draw_grid(notcurses* nc,
                int grid_rows,
                int grid_cols,
                float time_s,
-               VisualizationMode mode,
                ColorPalette palette,
                float sensitivity,
                const AudioMetrics& metrics,
@@ -83,9 +67,8 @@ void draw_grid(notcurses* nc,
         ncplane_set_fg_rgb8(stdplane, 200, 200, 200);
         ncplane_set_bg_default(stdplane);
         ncplane_printf_yx(stdplane, plane_rows - 3, 0,
-                          "Audio %s | Mode: %s | Palette: %s | Grid: %dx%d | Sens: %.2f",
+                          "Audio %s | Palette: %s | Grid: %dx%d | Sens: %.2f",
                           metrics.active ? (file_stream ? "file" : "capturing") : "inactive",
-                          mode_name(mode),
                           palette_name(palette),
                           grid_rows,
                           grid_cols,

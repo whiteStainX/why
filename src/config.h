@@ -60,8 +60,10 @@ struct SensitivityConfig {
 struct VisualConfig {
     GridConfig grid;
     SensitivityConfig sensitivity;
-    VisualizationMode default_mode = VisualizationMode::Bands;
+
+
     ColorPalette default_palette = ColorPalette::Rainbow;
+
     double target_fps = 60.0;
 };
 
@@ -94,8 +96,7 @@ struct ConfigLoadResult {
 };
 
 ConfigLoadResult load_app_config(const std::string& path);
-VisualizationMode visualization_mode_from_string(const std::string& value,
-                                                  VisualizationMode fallback = VisualizationMode::Bands);
+
 ColorPalette color_palette_from_string(const std::string& value,
                                        ColorPalette fallback = ColorPalette::Rainbow);
 

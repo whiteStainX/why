@@ -21,7 +21,7 @@ void render_frame(notcurses* nc,
                bool show_overlay_metrics);
 
 void add_animation_to_manager(std::unique_ptr<animations::Animation> animation);
-void init_animation_manager(notcurses* nc, const AppConfig& config);
+void load_animations_from_config(notcurses* nc, const AppConfig& config);
 
 } // namespace why
 

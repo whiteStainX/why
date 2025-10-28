@@ -1,15 +1,54 @@
 #include "animation_manager.h"
+#include "random_text_animation.h" // Include for RandomTextAnimation
+#include <iostream>
 
 namespace why {
 namespace animations {
+
+namespace {
+std::string clean_string_value(std::string value) {
+    // Trim leading whitespace
+    size_t first = value.find_first_not_of(" \t\n\r\f\v");
+    if (std::string::npos == first) {
+        return "";
+    }
+    // Trim trailing whitespace
+    size_t last = value.find_last_not_of(" \t\n\r\f\v");
+    value = value.substr(first, (last - first + 1));
+
+    // Remove surrounding quotes if present
+    if (value.length() >= 2 &&
+        ((value.front() == '\"' && value.back() == '\"' ) ||
+         (value.front() == '\'' && value.back() == '\'' ))) {
+        value = value.substr(1, value.length() - 2);
+    }
+    return value;
+}
+} // namespace
 
 void AnimationManager::add_animation(std::unique_ptr<Animation> animation) {
     animations_.push_back(std::move(animation));
 }
 
-void AnimationManager::init_all(notcurses* nc, const AppConfig& config) {
-    for (const auto& anim : animations_) {
-        anim->init(nc, config);
+void AnimationManager::load_animations(notcurses* nc, const AppConfig& config) {
+    std::clog << "[AnimationManager::load_animations] Attempting to load " << config.animations.size() << " animations." << std::endl;
+    for (const auto& anim_config : config.animations) {
+        std::clog << "[AnimationManager::load_animations] Processing animation config: type=" << anim_config.type << ", z_index=" << anim_config.z_index << std::endl;
+        std::unique_ptr<Animation> new_animation;
+        std::string cleaned_type = clean_string_value(anim_config.type);
+        if (cleaned_type == "RandomText") {
+            new_animation = std::make_unique<RandomTextAnimation>();
+            std::clog << "[AnimationManager::load_animations] Created RandomTextAnimation." << std::endl;
+        }
+        // Add more animation types here as they are implemented
+
+        if (new_animation) {
+            new_animation->init(nc, config);
+            animations_.push_back(std::move(new_animation));
+            std::clog << "[AnimationManager::load_animations] Initialized and added animation." << std::endl;
+        } else {
+            std::cerr << "[AnimationManager::load_animations] Unknown animation type: " << anim_config.type << std::endl;
+        }
     }
 }
 

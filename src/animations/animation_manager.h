@@ -18,7 +18,7 @@ public:
     ~AnimationManager() = default;
 
     void add_animation(std::unique_ptr<Animation> animation);
-    void init_all(notcurses* nc, const AppConfig& config);
+    void load_animations(notcurses* nc, const AppConfig& config);
     void update_all(float delta_time,
                     const AudioMetrics& metrics,
                     const std::vector<float>& bands,

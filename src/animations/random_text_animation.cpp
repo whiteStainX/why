@@ -1,4 +1,5 @@
 #include <notcurses/notcurses.h>
+#include <iostream> // For std::clog and std::cerr
 
 #include "random_text_animation.h"
 
@@ -25,6 +26,9 @@ void RandomTextAnimation::init(notcurses* nc, const AppConfig& config) {
     unsigned int plane_cols = 0;
     ncplane_dim_yx(stdplane, &plane_rows, &plane_cols);
 
+    // Log dimensions for debugging
+    std::clog << "[RandomTextAnimation::init] stdplane dimensions: " << plane_rows << "x" << plane_cols << std::endl;
+
     ncplane_options p_opts{};
     p_opts.rows = plane_rows;
     p_opts.cols = plane_cols;
@@ -32,7 +36,9 @@ void RandomTextAnimation::init(notcurses* nc, const AppConfig& config) {
     p_opts.x = 0;
     plane_ = ncplane_create(stdplane, &p_opts);
     if (!plane_) {
-        // Handle error, perhaps log it
+        std::cerr << "[RandomTextAnimation::init] Failed to create ncplane!" << std::endl;
+    } else {
+        std::clog << "[RandomTextAnimation::init] ncplane created successfully." << std::endl;
     }
 }
 

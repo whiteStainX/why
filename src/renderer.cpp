@@ -18,8 +18,8 @@ void add_animation_to_manager(std::unique_ptr<animations::Animation> animation) 
     animation_manager.add_animation(std::move(animation));
 }
 
-void init_animation_manager(notcurses* nc, const AppConfig& config) {
-    animation_manager.init_all(nc, config);
+void load_animations_from_config(notcurses* nc, const AppConfig& config) {
+    animation_manager.load_animations(nc, config);
 }
 
 void render_frame(notcurses* nc,

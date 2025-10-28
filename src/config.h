@@ -62,7 +62,7 @@ struct VisualConfig {
     SensitivityConfig sensitivity;
 
 
-    ColorPalette default_palette = ColorPalette::Rainbow;
+
 
     double target_fps = 60.0;
 };
@@ -97,8 +97,7 @@ struct ConfigLoadResult {
 
 ConfigLoadResult load_app_config(const std::string& path);
 
-ColorPalette color_palette_from_string(const std::string& value,
-                                       ColorPalette fallback = ColorPalette::Rainbow);
+
 
 } // namespace why
 

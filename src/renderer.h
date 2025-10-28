@@ -8,21 +8,10 @@
 
 namespace why {
 
-
-
-enum class ColorPalette {
-    Rainbow,
-    WarmCool,
-    DigitalAmber,
-    DigitalCyan,
-    DigitalViolet,
-};
-
 void draw_grid(notcurses* nc,
                int grid_rows,
                int grid_cols,
                float time_s,
-               ColorPalette palette,
                float sensitivity,
                const AudioMetrics& metrics,
                const std::vector<float>& bands,
@@ -31,7 +20,6 @@ void draw_grid(notcurses* nc,
                bool show_metrics,
                bool show_overlay_metrics);
 
-const char* palette_name(ColorPalette palette);
 
 } // namespace why
 

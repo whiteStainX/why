@@ -133,7 +133,7 @@ int main(int argc, char** argv) {
     const float max_sensitivity = config.visual.sensitivity.max_value;
     const float sensitivity_step = config.visual.sensitivity.step;
 
-    why::ColorPalette palette = config.visual.default_palette;
+
     const std::chrono::duration<double> frame_time(1.0 / config.visual.target_fps);
 
     const std::size_t scratch_samples = std::max<std::size_t>(4096, ring_frames * static_cast<std::size_t>(channels));
@@ -176,7 +176,6 @@ int main(int argc, char** argv) {
                        grid_rows,
                        grid_cols,
                        time_s,
-                       palette,
                        sensitivity,
                        audio_metrics,
                        dsp.band_energies(),
@@ -219,26 +218,7 @@ int main(int argc, char** argv) {
                 continue;
             }
 
-            if (key == 'p' || key == 'P') {
-                switch (palette) {
-                case why::ColorPalette::Rainbow:
-                    palette = why::ColorPalette::WarmCool;
-                    break;
-                case why::ColorPalette::WarmCool:
-                    palette = why::ColorPalette::DigitalAmber;
-                    break;
-                case why::ColorPalette::DigitalAmber:
-                    palette = why::ColorPalette::DigitalCyan;
-                    break;
-                case why::ColorPalette::DigitalCyan:
-                    palette = why::ColorPalette::DigitalViolet;
-                    break;
-                case why::ColorPalette::DigitalViolet:
-                    palette = why::ColorPalette::Rainbow;
-                    break;
-                }
-                continue;
-            }
+
             if (key == '[') {
                 sensitivity = std::max(min_sensitivity, sensitivity - sensitivity_step);
                 continue;

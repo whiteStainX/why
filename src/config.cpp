@@ -404,11 +404,7 @@ ConfigLoadResult load_app_config(const std::string& path) {
                   result.warnings);
 
 
-    std::string palette_value;
-    assign_string(raw, "visual.palette", palette_value);
-    if (!palette_value.empty()) {
-        result.config.visual.default_palette = color_palette_from_string(palette_value, result.config.visual.default_palette);
-    }
+
     assign_scalar(raw, "visual.target_fps", result.config.visual.target_fps, parse_double, result.warnings);
 
     assign_scalar(raw, "runtime.show_metrics", result.config.runtime.show_metrics, parse_bool, result.warnings);
@@ -472,26 +468,7 @@ ConfigLoadResult load_app_config(const std::string& path) {
 
 
 
-ColorPalette color_palette_from_string(const std::string& value, ColorPalette fallback) {
-    std::string lower(value);
-    std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    if (lower == "rainbow") {
-        return ColorPalette::Rainbow;
-    }
-    if (lower == "warmcool" || lower == "warm_cool" || lower == "warm-cool") {
-        return ColorPalette::WarmCool;
-    }
-    if (lower == "digitalamber" || lower == "digital-amber" || lower == "digital_amber") {
-        return ColorPalette::DigitalAmber;
-    }
-    if (lower == "digitalcyan" || lower == "digital-cyan" || lower == "digital_cyan") {
-        return ColorPalette::DigitalCyan;
-    }
-    if (lower == "digitalviolet" || lower == "digital-violet" || lower == "digital_violet") {
-        return ColorPalette::DigitalViolet;
-    }
-    return fallback;
-}
+
 
 } // namespace why
 

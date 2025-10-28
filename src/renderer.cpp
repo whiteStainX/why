@@ -10,28 +10,12 @@ namespace why {
 // or for future expansion, even if not directly used in the simplified draw_grid.
 
 
-const char* palette_name(ColorPalette palette) {
-    switch (palette) {
-    case ColorPalette::Rainbow:
-        return "Rainbow";
-    case ColorPalette::WarmCool:
-        return "Warm/Cool";
-    case ColorPalette::DigitalAmber:
-        return "Digital Amber";
-    case ColorPalette::DigitalCyan:
-        return "Digital Cyan";
-    case ColorPalette::DigitalViolet:
-        return "Digital Violet";
-    default:
-        return "Unknown";
-    }
-}
+
 
 void draw_grid(notcurses* nc,
                int grid_rows,
                int grid_cols,
                float time_s,
-               ColorPalette palette,
                float sensitivity,
                const AudioMetrics& metrics,
                const std::vector<float>& bands,
@@ -67,9 +51,8 @@ void draw_grid(notcurses* nc,
         ncplane_set_fg_rgb8(stdplane, 200, 200, 200);
         ncplane_set_bg_default(stdplane);
         ncplane_printf_yx(stdplane, plane_rows - 3, 0,
-                          "Audio %s | Palette: %s | Grid: %dx%d | Sens: %.2f",
+                          "Audio %s | Grid: %dx%d | Sens: %.2f",
                           metrics.active ? (file_stream ? "file" : "capturing") : "inactive",
-                          palette_name(palette),
                           grid_rows,
                           grid_cols,
                           sensitivity);

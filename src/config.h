@@ -43,26 +43,10 @@ struct DspConfig {
     bool enable_flux = true;
 };
 
-struct GridConfig {
-    int rows = 16;
-    int cols = 16;
-    int min_dim = 8;
-    int max_dim = 32;
-};
-
-struct SensitivityConfig {
-    float value = 1.0f;
-    float min_value = 0.2f;
-    float max_value = 5.0f;
-    float step = 0.1f;
-};
-
 struct VisualConfig {
-    GridConfig grid;
-    SensitivityConfig sensitivity;
-    VisualizationMode default_mode = VisualizationMode::Bands;
-    ColorPalette default_palette = ColorPalette::Rainbow;
+
     double target_fps = 60.0;
+
 };
 
 struct RuntimeConfig {
@@ -94,10 +78,8 @@ struct ConfigLoadResult {
 };
 
 ConfigLoadResult load_app_config(const std::string& path);
-VisualizationMode visualization_mode_from_string(const std::string& value,
-                                                  VisualizationMode fallback = VisualizationMode::Bands);
-ColorPalette color_palette_from_string(const std::string& value,
-                                       ColorPalette fallback = ColorPalette::Rainbow);
+
+
 
 } // namespace why
 

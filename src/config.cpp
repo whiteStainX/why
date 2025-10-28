@@ -377,42 +377,12 @@ ConfigLoadResult load_app_config(const std::string& path) {
                   result.warnings);
     assign_scalar(raw, "dsp.enable_flux", result.config.dsp.enable_flux, parse_bool, result.warnings);
 
-    assign_scalar(raw, "visual.grid.rows", result.config.visual.grid.rows, parse_int32, result.warnings);
-    assign_scalar(raw, "visual.grid.cols", result.config.visual.grid.cols, parse_int32, result.warnings);
-    assign_scalar(raw, "visual.grid.min", result.config.visual.grid.min_dim, parse_int32, result.warnings);
-    assign_scalar(raw, "visual.grid.max", result.config.visual.grid.max_dim, parse_int32, result.warnings);
 
-    assign_scalar(raw,
-                  "visual.sensitivity.value",
-                  result.config.visual.sensitivity.value,
-                  parse_float32,
-                  result.warnings);
-    assign_scalar(raw,
-                  "visual.sensitivity.min",
-                  result.config.visual.sensitivity.min_value,
-                  parse_float32,
-                  result.warnings);
-    assign_scalar(raw,
-                  "visual.sensitivity.max",
-                  result.config.visual.sensitivity.max_value,
-                  parse_float32,
-                  result.warnings);
-    assign_scalar(raw,
-                  "visual.sensitivity.step",
-                  result.config.visual.sensitivity.step,
-                  parse_float32,
-                  result.warnings);
 
-    std::string mode_value;
-    assign_string(raw, "visual.mode", mode_value);
-    if (!mode_value.empty()) {
-        result.config.visual.default_mode = visualization_mode_from_string(mode_value, result.config.visual.default_mode);
-    }
-    std::string palette_value;
-    assign_string(raw, "visual.palette", palette_value);
-    if (!palette_value.empty()) {
-        result.config.visual.default_palette = color_palette_from_string(palette_value, result.config.visual.default_palette);
-    }
+
+
+
+
     assign_scalar(raw, "visual.target_fps", result.config.visual.target_fps, parse_double, result.warnings);
 
     assign_scalar(raw, "runtime.show_metrics", result.config.runtime.show_metrics, parse_bool, result.warnings);
@@ -446,24 +416,8 @@ ConfigLoadResult load_app_config(const std::string& path) {
     if (result.config.dsp.hop_size == 0) {
         result.config.dsp.hop_size = std::max<std::size_t>(1, result.config.dsp.fft_size / 4);
     }
-    if (result.config.visual.grid.min_dim < 1) {
-        result.config.visual.grid.min_dim = 1;
-    }
-    if (result.config.visual.grid.max_dim < result.config.visual.grid.min_dim) {
-        result.config.visual.grid.max_dim = result.config.visual.grid.min_dim;
-    }
-    result.config.visual.grid.rows = std::clamp(result.config.visual.grid.rows,
-                                                result.config.visual.grid.min_dim,
-                                                result.config.visual.grid.max_dim);
-    result.config.visual.grid.cols = std::clamp(result.config.visual.grid.cols,
-                                                result.config.visual.grid.min_dim,
-                                                result.config.visual.grid.max_dim);
-    if (result.config.visual.sensitivity.value < result.config.visual.sensitivity.min_value) {
-        result.config.visual.sensitivity.value = result.config.visual.sensitivity.min_value;
-    }
-    if (result.config.visual.sensitivity.value > result.config.visual.sensitivity.max_value) {
-        result.config.visual.sensitivity.value = result.config.visual.sensitivity.max_value;
-    }
+
+
     if (result.config.visual.target_fps <= 0.0) {
         result.config.visual.target_fps = 60.0;
     }
@@ -474,47 +428,9 @@ ConfigLoadResult load_app_config(const std::string& path) {
     return result;
 }
 
-VisualizationMode visualization_mode_from_string(const std::string& value, VisualizationMode fallback) {
-    std::string lower(value);
-    std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    if (lower == "bands") {
-        return VisualizationMode::Bands;
-    }
-    if (lower == "radial") {
-        return VisualizationMode::Radial;
-    }
-    if (lower == "trails") {
-        return VisualizationMode::Trails;
-    }
-    if (lower == "digital" || lower == "digital_pulse" || lower == "digital-pulse") {
-        return VisualizationMode::Digital;
-    }
-    if (lower == "ascii" || lower == "ascii_flux" || lower == "ascii-flux" || lower == "flux") {
-        return VisualizationMode::Ascii;
-    }
-    return fallback;
-}
 
-ColorPalette color_palette_from_string(const std::string& value, ColorPalette fallback) {
-    std::string lower(value);
-    std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    if (lower == "rainbow") {
-        return ColorPalette::Rainbow;
-    }
-    if (lower == "warmcool" || lower == "warm_cool" || lower == "warm-cool") {
-        return ColorPalette::WarmCool;
-    }
-    if (lower == "digitalamber" || lower == "digital-amber" || lower == "digital_amber") {
-        return ColorPalette::DigitalAmber;
-    }
-    if (lower == "digitalcyan" || lower == "digital-cyan" || lower == "digital_cyan") {
-        return ColorPalette::DigitalCyan;
-    }
-    if (lower == "digitalviolet" || lower == "digital-violet" || lower == "digital_violet") {
-        return ColorPalette::DigitalViolet;
-    }
-    return fallback;
-}
+
+
 
 } // namespace why
 

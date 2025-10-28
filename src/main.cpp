@@ -13,6 +13,7 @@
 #include "dsp.h"
 #include "plugins.h"
 #include "renderer.h"
+#include "animations/random_text_animation.h"
 
 int main(int argc, char** argv) {
     std::setlocale(LC_ALL, "");
@@ -98,8 +99,6 @@ int main(int argc, char** argv) {
             }
             std::cerr << std::endl;
         }
-    } else {
-        std::clog << "[audio] capture disabled; running without live audio" << std::endl;
     }
 
     why::DspEngine dsp(sample_rate,
@@ -124,22 +123,17 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    int grid_rows = config.visual.grid.rows;
-    int grid_cols = config.visual.grid.cols;
-    const int min_grid_dim = config.visual.grid.min_dim;
-    const int max_grid_dim = config.visual.grid.max_dim;
-    float sensitivity = config.visual.sensitivity.value;
-    const float min_sensitivity = config.visual.sensitivity.min_value;
-    const float max_sensitivity = config.visual.sensitivity.max_value;
-    const float sensitivity_step = config.visual.sensitivity.step;
-    why::VisualizationMode mode = config.visual.default_mode;
-    why::ColorPalette palette = config.visual.default_palette;
+
+
     const std::chrono::duration<double> frame_time(1.0 / config.visual.target_fps);
 
     const std::size_t scratch_samples = std::max<std::size_t>(4096, ring_frames * static_cast<std::size_t>(channels));
     std::vector<float> audio_scratch(scratch_samples);
     why::AudioMetrics audio_metrics{};
     audio_metrics.active = audio_active;
+
+    // Set the initial animation
+    why::set_active_animation(std::make_unique<why::animations::RandomTextAnimation>());
 
     bool running = true;
     const auto start_time = std::chrono::steady_clock::now();
@@ -172,13 +166,8 @@ int main(int argc, char** argv) {
 
         plugin_manager.notify_frame(audio_metrics, dsp.band_energies(), dsp.beat_strength(), time_s);
 
-        why::draw_grid(nc,
-                       grid_rows,
-                       grid_cols,
+        why::render_frame(nc,
                        time_s,
-                       mode,
-                       palette,
-                       sensitivity,
                        audio_metrics,
                        dsp.band_energies(),
                        dsp.beat_strength(),
@@ -203,70 +192,9 @@ int main(int argc, char** argv) {
                 running = false;
                 break;
             }
-            if (config.runtime.allow_resize && key == NCKEY_UP) {
-                grid_rows = std::min(grid_rows + 1, max_grid_dim);
-                continue;
-            }
-            if (config.runtime.allow_resize && key == NCKEY_DOWN) {
-                grid_rows = std::max(grid_rows - 1, min_grid_dim);
-                continue;
-            }
-            if (config.runtime.allow_resize && key == NCKEY_RIGHT) {
-                grid_cols = std::min(grid_cols + 1, max_grid_dim);
-                continue;
-            }
-            if (config.runtime.allow_resize && key == NCKEY_LEFT) {
-                grid_cols = std::max(grid_cols - 1, min_grid_dim);
-                continue;
-            }
-            if (key == 'm' || key == 'M') {
-                switch (mode) {
-                case why::VisualizationMode::Bands:
-                    mode = why::VisualizationMode::Radial;
-                    break;
-                case why::VisualizationMode::Radial:
-                    mode = why::VisualizationMode::Trails;
-                    break;
-                case why::VisualizationMode::Trails:
-                    mode = why::VisualizationMode::Digital;
-                    break;
-                case why::VisualizationMode::Digital:
-                    mode = why::VisualizationMode::Ascii;
-                    break;
-                case why::VisualizationMode::Ascii:
-                    mode = why::VisualizationMode::Bands;
-                    break;
-                }
-                continue;
-            }
-            if (key == 'p' || key == 'P') {
-                switch (palette) {
-                case why::ColorPalette::Rainbow:
-                    palette = why::ColorPalette::WarmCool;
-                    break;
-                case why::ColorPalette::WarmCool:
-                    palette = why::ColorPalette::DigitalAmber;
-                    break;
-                case why::ColorPalette::DigitalAmber:
-                    palette = why::ColorPalette::DigitalCyan;
-                    break;
-                case why::ColorPalette::DigitalCyan:
-                    palette = why::ColorPalette::DigitalViolet;
-                    break;
-                case why::ColorPalette::DigitalViolet:
-                    palette = why::ColorPalette::Rainbow;
-                    break;
-                }
-                continue;
-            }
-            if (key == '[') {
-                sensitivity = std::max(min_sensitivity, sensitivity - sensitivity_step);
-                continue;
-            }
-            if (key == ']') {
-                sensitivity = std::min(max_sensitivity, sensitivity + sensitivity_step);
-                continue;
-            }
+
+
+
             if (key == NCKEY_RESIZE) {
                 break;
             }
@@ -287,4 +215,5 @@ int main(int argc, char** argv) {
 
     return 0;
 }
+
 

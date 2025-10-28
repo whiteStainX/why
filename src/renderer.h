@@ -6,40 +6,49 @@
 
 #include "audio_engine.h"
 
+#include "animations/animation.h"
+
+
+
 namespace why {
 
-enum class VisualizationMode {
-    Bands,
-    Radial,
-    Trails,
-    Digital,
-    Ascii,
-};
 
-enum class ColorPalette {
-    Rainbow,
-    WarmCool,
-    DigitalAmber,
-    DigitalCyan,
-    DigitalViolet,
-};
 
-void draw_grid(notcurses* nc,
-               int grid_rows,
-               int grid_cols,
+void render_frame(notcurses* nc,
+
+
+
                float time_s,
-               VisualizationMode mode,
-               ColorPalette palette,
-               float sensitivity,
+
+
+
                const AudioMetrics& metrics,
+
+
+
                const std::vector<float>& bands,
+
+
+
                float beat_strength,
+
+
+
                bool file_stream,
+
+
+
                bool show_metrics,
+
+
+
                bool show_overlay_metrics);
 
-const char* mode_name(VisualizationMode mode);
-const char* palette_name(ColorPalette palette);
+
+
+void set_active_animation(std::unique_ptr<animations::Animation> animation);
+
+
 
 } // namespace why
 

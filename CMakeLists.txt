@@ -14,7 +14,7 @@ if (NOT NOTCURSES_FOUND)
 endif()
 
 # --- sources ---
-add_executable(why
+set(WHY_SOURCES
   src/main.cpp
   src/audio_engine.cpp
   src/config.cpp
@@ -23,6 +23,10 @@ add_executable(why
   src/dsp.cpp
   external/kissfft/kiss_fft.c
 )
+
+file(GLOB_RECURSE ANIMATION_SOURCES "src/animations/*.cpp")
+
+add_executable(why ${WHY_SOURCES} ${ANIMATION_SOURCES})
 
 # --- includes ---
 target_include_directories(why PRIVATE

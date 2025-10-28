@@ -4,51 +4,20 @@
 #include <random>
 #include <chrono>
 
+#include "animations/random_text_animation.h"
+
 namespace why {
 
-// These functions are kept as they might be used by other parts of the application
-// or for future expansion, even if not directly used in the simplified draw_grid.
-const char* mode_name(VisualizationMode mode) {
-    switch (mode) {
-    case VisualizationMode::Bands:
-        return "Bands";
-    case VisualizationMode::Radial:
-        return "Radial";
-    case VisualizationMode::Trails:
-        return "Trails";
-    case VisualizationMode::Digital:
-        return "Digital Pulse";
-    case VisualizationMode::Ascii:
-        return "ASCII Flux";
-    default:
-        return "Unknown";
-    }
+namespace {
+static std::unique_ptr<animations::Animation> current_animation;
+} // namespace
+
+void set_active_animation(std::unique_ptr<animations::Animation> animation) {
+    current_animation = std::move(animation);
 }
 
-const char* palette_name(ColorPalette palette) {
-    switch (palette) {
-    case ColorPalette::Rainbow:
-        return "Rainbow";
-    case ColorPalette::WarmCool:
-        return "Warm/Cool";
-    case ColorPalette::DigitalAmber:
-        return "Digital Amber";
-    case ColorPalette::DigitalCyan:
-        return "Digital Cyan";
-    case ColorPalette::DigitalViolet:
-        return "Digital Violet";
-    default:
-        return "Unknown";
-    }
-}
-
-void draw_grid(notcurses* nc,
-               int grid_rows,
-               int grid_cols,
+void render_frame(notcurses* nc,
                float time_s,
-               VisualizationMode mode,
-               ColorPalette palette,
-               float sensitivity,
                const AudioMetrics& metrics,
                const std::vector<float>& bands,
                float beat_strength,
@@ -63,33 +32,18 @@ void draw_grid(notcurses* nc,
     // Clear the screen
     ncplane_erase(stdplane);
 
-    // Seed the random number generator
-    static std::mt19937_64 rng(std::chrono::steady_clock::now().time_since_epoch().count());
-    static const std::string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:',.<>/?";
-    static std::uniform_int_distribution<std::string::size_type> dist(0, chars.size() - 1);
-
-    // Display random text
-    std::string random_text;
-    for (unsigned int i = 0; i < plane_cols / 2; ++i) { // Display half the width to avoid overflow with wide characters
-        random_text += chars[dist(rng)];
+    if (current_animation) {
+        current_animation->render(nc, time_s, metrics, bands, beat_strength);
     }
-
-    ncplane_set_fg_rgb8(stdplane, 255, 255, 255); // White foreground
-    ncplane_set_bg_rgb8(stdplane, 0, 0, 0);     // Black background
-    ncplane_putstr_yx(stdplane, plane_rows / 2, (plane_cols - random_text.length()) / 2, random_text.c_str());
 
     // Display overlay metrics if requested
     if (show_overlay_metrics && show_metrics) {
-        ncplane_set_fg_rgb8(stdplane, 200, 200, 200);
-        ncplane_set_bg_default(stdplane);
+        ncplane_set_fg_rgb8(stdplane, 200, 200, 200); // White foreground
+        ncplane_set_bg_rgb8(stdplane, 0, 0, 0);     // Black background
         ncplane_printf_yx(stdplane, plane_rows - 3, 0,
-                          "Audio %s | Mode: %s | Palette: %s | Grid: %dx%d | Sens: %.2f",
-                          metrics.active ? (file_stream ? "file" : "capturing") : "inactive",
-                          mode_name(mode),
-                          palette_name(palette),
-                          grid_rows,
-                          grid_cols,
-                          sensitivity);
+                          "Audio %s",
+                          metrics.active ? (file_stream ? "file" : "capturing") : "inactive"
+                        );
 
         ncplane_printf_yx(stdplane, plane_rows - 2, 0,
                           "RMS: %.3f | Peak: %.3f | Dropped: %zu | Beat: %.2f",

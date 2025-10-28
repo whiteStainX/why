@@ -29,7 +29,7 @@ This document outlines the detailed steps for implementing advanced features for
     *   `BarVisualAnimation::render` draws the bar graph to its `ncplane` using ASCII characters.
     *   `AnimationManager` can instantiate `BarVisualAnimation` based on configuration.
     *   Project builds successfully.
-    *   Adding `[[animations]] type = "BarVisual" z_index = 1` to `why.toml` results in the bar visual being rendered alongside `RandomTextAnimation`.
+    *   Adding `[[animations]] type = "BarVisual" z_index = 1` to `why.toml` results in the bar visual being rendered alongside `RandomTextAnimation`. 
 
 ### Step 3: Implement Basic Z-Ordering Control (Completed)
 
@@ -41,17 +41,18 @@ This document outlines the detailed steps for implementing advanced features for
     *   Changes to `why.toml` now correctly trigger a rebuild of the executable.
     *   Project builds successfully.
 
-### Step 4: Implement DAG Logic for Animation Triggers (Conceptual)
+### Step 4: Implement Reactive Audio-Triggered Animations
 
-*   **Description**: Design and implement a mechanism for animations to trigger or influence other animations based on internal state or external events (e.g., audio beat). This will involve defining dependencies and a simple state machine for animations.
-*   **Files Changed**: `src/animations/animation.h` (potentially adding `on_event` or `get_state`), `src/animations/animation_manager.h`, `src/animations/animation_manager.cpp`.
+*   **Description**: Implement a system where animations can be activated/deactivated based on real-time audio conditions (e.g., a specific frequency band exceeding a threshold, or beat strength). This removes direct animation dependencies and focuses on audio-to-visual mapping.
+*   **Files Changed**: `src/config.h`, `src/config.cpp`, `src/animations/animation.h`, `src/animations/random_text_animation.h`, `src/animations/random_text_animation.cpp`, `src/animations/bar_visual_animation.h`, `src/animations/bar_visual_animation.cpp`, `src/animations/animation_manager.h`, `src/animations/animation_manager.cpp`.
 *   **Success Criteria**:
-    *   `Animation` interface includes methods or properties to communicate its state or emit events.
-    *   `AnimationManager` includes logic to:
-        *   Define dependencies between animations (e.g., Animation B starts when Animation A finishes).
-        *   Evaluate conditions and trigger state changes in animations.
+    *   `AppConfig` can store trigger conditions for animations (e.g., `trigger_band_index`, `trigger_threshold`, `trigger_beat_min`).
+    *   `config.cpp` successfully parses these conditions from `why.toml`.
+    *   `Animation` interface includes `activate()` and `deactivate()` methods, and `is_active()` reflects the current state.
+    *   `RandomTextAnimation` and `BarVisualAnimation` correctly implement `activate()` and `deactivate()`.
+    *   `AnimationManager` dynamically activates/deactivates animations based on audio input by evaluating their configured trigger conditions.
     *   Project builds successfully.
-    *   A simple dependency (e.g., `RandomTextAnimation` disappears when `BarVisualAnimation` starts) can be demonstrated.
+    *   When running the application, animations appear/disappear or change behavior based on the audio input (e.g., a bar visual only appears when its corresponding frequency band is active).
 
 ### Step 5: Implement Animation Composition (Optional/Future)
 

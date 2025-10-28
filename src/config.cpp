@@ -453,6 +453,32 @@ ConfigLoadResult load_app_config(const std::string& path) {
         if (z_index_it != raw_anim_config.end()) {
             parse_int32(z_index_it->second.value, anim_config.z_index);
         }
+
+        const auto initially_active_it = raw_anim_config.find("initially_active");
+        if (initially_active_it != raw_anim_config.end()) {
+            parse_bool(initially_active_it->second.value, anim_config.initially_active);
+        }
+
+        const auto trigger_band_index_it = raw_anim_config.find("trigger_band_index");
+        if (trigger_band_index_it != raw_anim_config.end()) {
+            parse_int32(trigger_band_index_it->second.value, anim_config.trigger_band_index);
+        }
+
+        const auto trigger_threshold_it = raw_anim_config.find("trigger_threshold");
+        if (trigger_threshold_it != raw_anim_config.end()) {
+            parse_float32(trigger_threshold_it->second.value, anim_config.trigger_threshold);
+        }
+
+        const auto trigger_beat_min_it = raw_anim_config.find("trigger_beat_min");
+        if (trigger_beat_min_it != raw_anim_config.end()) {
+            parse_float32(trigger_beat_min_it->second.value, anim_config.trigger_beat_min);
+        }
+
+        const auto trigger_beat_max_it = raw_anim_config.find("trigger_beat_max");
+        if (trigger_beat_max_it != raw_anim_config.end()) {
+            parse_float32(trigger_beat_max_it->second.value, anim_config.trigger_beat_max);
+        }
+
         // Future: Parse generic parameters here
 
         result.config.animations.push_back(anim_config);

@@ -65,6 +65,12 @@ struct PluginConfig {
 struct AnimationConfig {
     std::string type;
     int z_index = 0;
+    bool initially_active = true; // New: whether the animation starts active
+    // Trigger conditions
+    int trigger_band_index = -1; // -1 means no band-specific trigger
+    float trigger_threshold = 0.0f; // Threshold for band energy or beat strength
+    float trigger_beat_min = 0.0f; // Minimum beat strength to activate
+    float trigger_beat_max = 1.0f; // Maximum beat strength to activate
     // Add more generic parameters as needed, e.g., std::map<std::string, std::string> params;
 };
 

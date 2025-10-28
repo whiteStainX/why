@@ -41,9 +41,9 @@ This document outlines the detailed steps for implementing advanced features for
     *   Changes to `why.toml` now correctly trigger a rebuild of the executable.
     *   Project builds successfully.
 
-### Step 4: Implement Reactive Audio-Triggered Animations
+### Step 4: Implement Reactive Audio-Triggered Animations (Completed)
 
-*   **Description**: Implement a system where animations can be activated/deactivated based on real-time audio conditions (e.g., a specific frequency band exceeding a threshold, or beat strength). This removes direct animation dependencies and focuses on audio-to-visual mapping.
+*   **Description**: Implemented a system where animations can be activated/deactivated based on real-time audio conditions (e.g., a specific frequency band exceeding a threshold, or beat strength). This removes direct animation dependencies and focuses on audio-to-visual mapping.
 *   **Files Changed**: `src/config.h`, `src/config.cpp`, `src/animations/animation.h`, `src/animations/random_text_animation.h`, `src/animations/random_text_animation.cpp`, `src/animations/bar_visual_animation.h`, `src/animations/bar_visual_animation.cpp`, `src/animations/animation_manager.h`, `src/animations/animation_manager.cpp`.
 *   **Success Criteria**:
     *   `AppConfig` can store trigger conditions for animations (e.g., `trigger_band_index`, `trigger_threshold`, `trigger_beat_min`).

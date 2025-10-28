@@ -23,7 +23,7 @@ public:
     void render(notcurses* nc) override;
 
     bool is_active() const override { return true; } // Always active for now
-    int get_z_index() const override { return 0; } // Default Z-index
+    int get_z_index() const override { return z_index_; }
     ncplane* get_plane() const override { return plane_; }
 
 private:
@@ -32,6 +32,7 @@ private:
     static const std::string chars_;
     ncplane* plane_ = nullptr;
     std::string current_text_;
+    int z_index_ = 0;
 };
 
 } // namespace animations

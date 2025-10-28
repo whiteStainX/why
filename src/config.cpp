@@ -117,6 +117,18 @@ std::vector<std::string> parse_array_values(const std::string& raw, int line, st
     return values;
 }
 
+std::string sanitize_string_value(const std::string& value) {
+    std::string trimmed = trim(value);
+    if (trimmed.length() >= 2) {
+        const char first = trimmed.front();
+        const char last = trimmed.back();
+        if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+            trimmed = trimmed.substr(1, trimmed.length() - 2);
+        }
+    }
+    return trimmed;
+}
+
 void parse_file(const std::string& path, RawConfig& out, std::vector<std::string>& warnings, bool& loaded_file) {
     std::ifstream file(path);
     if (!file.is_open()) {
@@ -429,7 +441,7 @@ ConfigLoadResult load_app_config(const std::string& path) {
         AnimationConfig anim_config;
         const auto type_it = raw_anim_config.find("type");
         if (type_it != raw_anim_config.end()) {
-            anim_config.type = type_it->second.value;
+            anim_config.type = sanitize_string_value(type_it->second.value);
         } else {
             std::ostringstream oss;
             oss << "Animation configuration missing 'type' for an entry.";

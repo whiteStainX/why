@@ -40,6 +40,14 @@ void RandomTextAnimation::init(notcurses* nc, const AppConfig& config) {
     } else {
         std::clog << "[RandomTextAnimation::init] ncplane created successfully." << std::endl;
     }
+
+    // stores the configured z_index during startup, so subsequent renders respect whatever value you set in why.toml at runtime.
+    for (const auto& anim_config : config.animations) {
+        if (anim_config.type == "RandomText") {
+            z_index_ = anim_config.z_index;
+            break;
+        }
+    }
 }
 
 void RandomTextAnimation::update(float delta_time,

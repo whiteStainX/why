@@ -77,12 +77,10 @@ void AnimationManager::render_all(notcurses* nc) {
         return a->get_z_index() < b->get_z_index();
     });
 
-    // Explicitly set Z-order for each plane
+    // Explicitly set Z-order for each plane based on sorted order (lowest first)
     for (const auto& anim : animations_) {
         if (anim->get_plane()) {
-            // Move planes to the bottom first, then they will be moved up by subsequent animations
-            // based on their sorted z_index. This ensures correct relative ordering.
-            ncplane_move_bottom(anim->get_plane());
+            ncplane_move_top(anim->get_plane());
         }
     }
 

@@ -31,13 +31,14 @@ This document outlines the detailed steps for implementing advanced features for
     *   Project builds successfully.
     *   Adding `[[animations]] type = "BarVisual" z_index = 1` to `why.toml` results in the bar visual being rendered alongside `RandomTextAnimation`.
 
-### Step 3: Implement Basic Z-Ordering Control
+### Step 3: Implement Basic Z-Ordering Control (Completed)
 
-*   **Description**: Ensure animations are rendered according to their `z_index` property, allowing control over which animation appears on top.
-*   **Files Changed**: `src/animations/animation_manager.cpp` (already has sorting logic, but needs verification).
+*   **Description**: Ensure animations are rendered according to their `z_index` property, allowing control over which animation appears on top. This also includes ensuring `why.toml` changes trigger a rebuild.
+*   **Files Changed**: `src/animations/animation_manager.cpp` (sorting logic and `ncplane_move_bottom`), `CMakeLists.txt` (to track `why.toml` changes).
 *   **Success Criteria**:
     *   `AnimationManager::render_all` correctly sorts animations by `get_z_index()` before calling their `render()` methods.
     *   By changing `z_index` in `why.toml` for `RandomTextAnimation` and `BarVisualAnimation`, their layering order changes visually.
+    *   Changes to `why.toml` now correctly trigger a rebuild of the executable.
     *   Project builds successfully.
 
 ### Step 4: Implement DAG Logic for Animation Triggers (Conceptual)

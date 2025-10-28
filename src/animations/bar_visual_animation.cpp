@@ -38,12 +38,27 @@ void BarVisualAnimation::init(notcurses* nc, const AppConfig& config) {
         std::clog << "[BarVisualAnimation::init] ncplane created successfully with dimensions: " << plane_rows_ << "x" << plane_cols_ << std::endl;
     }
 
-    // Set z-index from config if available
+    // Set z-index and initial active state from config
     for (const auto& anim_config : config.animations) {
         if (anim_config.type == "BarVisual") { // Assuming type is used to identify
             z_index_ = anim_config.z_index;
+            is_active_ = anim_config.initially_active;
             break;
         }
+    }
+}
+
+void BarVisualAnimation::activate() {
+    is_active_ = true;
+    if (plane_) {
+        // Optionally reset or re-draw something on activation
+    }
+}
+
+void BarVisualAnimation::deactivate() {
+    is_active_ = false;
+    if (plane_) {
+        ncplane_erase(plane_); // Clear the plane when deactivated
     }
 }
 
@@ -51,7 +66,7 @@ void BarVisualAnimation::update(float delta_time,
                                 const AudioMetrics& metrics,
                                 const std::vector<float>& bands,
                                 float beat_strength) {
-    if (!plane_) return;
+    if (!plane_ || !is_active_) return;
 
     // Copy bands data for rendering
     current_bands_ = bands;
@@ -76,7 +91,7 @@ void BarVisualAnimation::update(float delta_time,
 }
 
 void BarVisualAnimation::render(notcurses* nc) {
-    if (!plane_) return;
+    if (!plane_ || !is_active_) return;
 
     ncplane_erase(plane_);
 

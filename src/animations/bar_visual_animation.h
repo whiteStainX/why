@@ -22,17 +22,20 @@ public:
                 float beat_strength) override;
     void render(notcurses* nc) override;
 
-    bool is_active() const override { return true; } // Always active for now
+    void activate() override;
+    void deactivate() override;
+
+    bool is_active() const override { return is_active_; }
     int get_z_index() const override { return z_index_; }
     ncplane* get_plane() const override { return plane_; }
 
 private:
     ncplane* plane_ = nullptr;
     int z_index_ = 0;
+    bool is_active_ = true; // New: internal active state
     std::vector<float> current_bands_;
     unsigned int plane_rows_ = 0;
     unsigned int plane_cols_ = 0;
-    static const std::string kAsciiGlyphs;
 };
 
 } // namespace animations

@@ -21,6 +21,8 @@ public:
                         const std::vector<float>& bands,
                         float beat_strength) = 0;
     virtual void render(notcurses* nc) = 0;
+    virtual void activate() = 0;
+    virtual void deactivate() = 0;
 
     // State queries
     virtual bool is_active() const = 0;

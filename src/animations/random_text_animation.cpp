@@ -20,7 +20,6 @@ RandomTextAnimation::~RandomTextAnimation() {
 }
 
 void RandomTextAnimation::init(notcurses* nc, const AppConfig& config) {
-    // Create a new plane for this animation
     ncplane* stdplane = notcurses_stdplane(nc);
     unsigned int plane_rows = 0;
     unsigned int plane_cols = 0;
@@ -41,12 +40,28 @@ void RandomTextAnimation::init(notcurses* nc, const AppConfig& config) {
         std::clog << "[RandomTextAnimation::init] ncplane created successfully." << std::endl;
     }
 
-    // stores the configured z_index during startup, so subsequent renders respect whatever value you set in why.toml at runtime.
+    // Set z-index and initial active state from config
     for (const auto& anim_config : config.animations) {
-        if (anim_config.type == "RandomText") {
+        if (anim_config.type == "RandomText") { // Assuming type is used to identify
             z_index_ = anim_config.z_index;
+            is_active_ = anim_config.initially_active;
             break;
         }
+    }
+}
+
+void RandomTextAnimation::activate() {
+    is_active_ = true;
+    if (plane_) {
+        ncplane_set_fg_rgb8(plane_, 255, 255, 255); // White foreground
+        ncplane_set_bg_rgb8(plane_, 0, 0, 0);     // Black background
+    }
+}
+
+void RandomTextAnimation::deactivate() {
+    is_active_ = false;
+    if (plane_) {
+        ncplane_erase(plane_); // Clear the plane when deactivated
     }
 }
 
@@ -54,8 +69,7 @@ void RandomTextAnimation::update(float delta_time,
                                  const AudioMetrics& metrics,
                                  const std::vector<float>& bands,
                                  float beat_strength) {
-    // Generate random text in the update phase
-    if (!plane_) return;
+    if (!plane_ || !is_active_) return;
 
     unsigned int plane_rows = 0;
     unsigned int plane_cols = 0;
@@ -68,7 +82,7 @@ void RandomTextAnimation::update(float delta_time,
 }
 
 void RandomTextAnimation::render(notcurses* nc) {
-    if (!plane_) return;
+    if (!plane_ || !is_active_) return;
 
     ncplane_erase(plane_);
 

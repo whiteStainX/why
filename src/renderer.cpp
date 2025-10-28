@@ -8,6 +8,14 @@
 
 namespace why {
 
+namespace {
+static std::unique_ptr<animations::Animation> current_animation;
+} // namespace
+
+void set_active_animation(std::unique_ptr<animations::Animation> animation) {
+    current_animation = std::move(animation);
+}
+
 void render_frame(notcurses* nc,
                int grid_rows,
                int grid_cols,
@@ -27,8 +35,9 @@ void render_frame(notcurses* nc,
     // Clear the screen
     ncplane_erase(stdplane);
 
-    static animations::RandomTextAnimation random_text_animation;
-    random_text_animation.render(nc, grid_rows, grid_cols, time_s, sensitivity, metrics, bands, beat_strength);
+    if (current_animation) {
+        current_animation->render(nc, grid_rows, grid_cols, time_s, sensitivity, metrics, bands, beat_strength);
+    }
 
     // Display overlay metrics if requested
     if (show_overlay_metrics && show_metrics) {

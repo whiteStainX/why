@@ -13,6 +13,7 @@
 #include "dsp.h"
 #include "plugins.h"
 #include "renderer.h"
+#include "animations/random_text_animation.h"
 
 int main(int argc, char** argv) {
     std::setlocale(LC_ALL, "");
@@ -98,8 +99,6 @@ int main(int argc, char** argv) {
             }
             std::cerr << std::endl;
         }
-    } else {
-        std::clog << "[audio] capture disabled; running without live audio" << std::endl;
     }
 
     why::DspEngine dsp(sample_rate,
@@ -133,13 +132,15 @@ int main(int argc, char** argv) {
     const float max_sensitivity = config.visual.sensitivity.max_value;
     const float sensitivity_step = config.visual.sensitivity.step;
 
-
     const std::chrono::duration<double> frame_time(1.0 / config.visual.target_fps);
 
     const std::size_t scratch_samples = std::max<std::size_t>(4096, ring_frames * static_cast<std::size_t>(channels));
     std::vector<float> audio_scratch(scratch_samples);
     why::AudioMetrics audio_metrics{};
     audio_metrics.active = audio_active;
+
+    // Set the initial animation
+    why::set_active_animation(std::make_unique<why::animations::RandomTextAnimation>());
 
     bool running = true;
     const auto start_time = std::chrono::steady_clock::now();
@@ -218,7 +219,6 @@ int main(int argc, char** argv) {
                 continue;
             }
 
-
             if (key == '[') {
                 sensitivity = std::max(min_sensitivity, sensitivity - sensitivity_step);
                 continue;
@@ -247,4 +247,5 @@ int main(int argc, char** argv) {
 
     return 0;
 }
+
 

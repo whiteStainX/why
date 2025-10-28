@@ -21,6 +21,7 @@ add_executable(why
   src/plugins.cpp
   src/renderer.cpp
   src/dsp.cpp
+  src/animations/random_text_animation.cpp
   external/kissfft/kiss_fft.c
 )
 

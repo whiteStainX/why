@@ -4,15 +4,11 @@
 #include <random>
 #include <chrono>
 
+#include "animations/random_text_animation.h"
+
 namespace why {
 
-// These functions are kept as they might be used by other parts of the application
-// or for future expansion, even if not directly used in the simplified draw_grid.
-
-
-
-
-void draw_grid(notcurses* nc,
+void render_frame(notcurses* nc,
                int grid_rows,
                int grid_cols,
                float time_s,
@@ -31,25 +27,13 @@ void draw_grid(notcurses* nc,
     // Clear the screen
     ncplane_erase(stdplane);
 
-    // Seed the random number generator
-    static std::mt19937_64 rng(std::chrono::steady_clock::now().time_since_epoch().count());
-    static const std::string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:',.<>/?";
-    static std::uniform_int_distribution<std::string::size_type> dist(0, chars.size() - 1);
-
-    // Display random text
-    std::string random_text;
-    for (unsigned int i = 0; i < plane_cols / 2; ++i) { // Display half the width to avoid overflow with wide characters
-        random_text += chars[dist(rng)];
-    }
-
-    ncplane_set_fg_rgb8(stdplane, 255, 255, 255); // White foreground
-    ncplane_set_bg_rgb8(stdplane, 0, 0, 0);     // Black background
-    ncplane_putstr_yx(stdplane, plane_rows / 2, (plane_cols - random_text.length()) / 2, random_text.c_str());
+    static animations::RandomTextAnimation random_text_animation;
+    random_text_animation.render(nc, grid_rows, grid_cols, time_s, sensitivity, metrics, bands, beat_strength);
 
     // Display overlay metrics if requested
     if (show_overlay_metrics && show_metrics) {
-        ncplane_set_fg_rgb8(stdplane, 200, 200, 200);
-        ncplane_set_bg_default(stdplane);
+        ncplane_set_fg_rgb8(stdplane, 200, 200, 200); // White foreground
+        ncplane_set_bg_rgb8(stdplane, 0, 0, 0);     // Black background
         ncplane_printf_yx(stdplane, plane_rows - 3, 0,
                           "Audio %s | Grid: %dx%d | Sens: %.2f",
                           metrics.active ? (file_stream ? "file" : "capturing") : "inactive",

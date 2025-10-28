@@ -172,7 +172,7 @@ int main(int argc, char** argv) {
 
         plugin_manager.notify_frame(audio_metrics, dsp.band_energies(), dsp.beat_strength(), time_s);
 
-        why::draw_grid(nc,
+        why::render_frame(nc,
                        grid_rows,
                        grid_cols,
                        time_s,

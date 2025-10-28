@@ -8,7 +8,7 @@
 
 namespace why {
 
-void draw_grid(notcurses* nc,
+void render_frame(notcurses* nc,
                int grid_rows,
                int grid_cols,
                float time_s,

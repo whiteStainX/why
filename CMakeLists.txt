@@ -21,6 +21,8 @@ set(WHY_SOURCES
   src/plugins.cpp
   src/renderer.cpp
   src/dsp.cpp
+  src/animations/random_text_animation.cpp
+  src/animations/bar_visual_animation.cpp
   external/kissfft/kiss_fft.c
 )
 

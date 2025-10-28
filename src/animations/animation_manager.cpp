@@ -1,5 +1,6 @@
 #include "animation_manager.h"
 #include "random_text_animation.h" // Include for RandomTextAnimation
+#include "bar_visual_animation.h" // Include for BarVisualAnimation
 #include <iostream>
 
 namespace why {
@@ -39,6 +40,9 @@ void AnimationManager::load_animations(notcurses* nc, const AppConfig& config) {
         if (cleaned_type == "RandomText") {
             new_animation = std::make_unique<RandomTextAnimation>();
             std::clog << "[AnimationManager::load_animations] Created RandomTextAnimation." << std::endl;
+        } else if (cleaned_type == "BarVisual") {
+            new_animation = std::make_unique<BarVisualAnimation>();
+            std::clog << "[AnimationManager::load_animations] Created BarVisualAnimation." << std::endl;
         }
         // Add more animation types here as they are implemented
 

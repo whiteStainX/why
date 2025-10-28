@@ -45,3 +45,7 @@ safe_mode = false
 [[animations]]
 type = "RandomText"
 z_index = 0
+
+[[animations]]
+type = "BarVisual"
+z_index = 1

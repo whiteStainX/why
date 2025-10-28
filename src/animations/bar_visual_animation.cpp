@@ -7,6 +7,8 @@
 namespace why {
 namespace animations {
 
+const std::string BarVisualAnimation::kAsciiGlyphs = R"( .'`^",:;Il!i><~+_-?][}{1)(|\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$)";
+
 BarVisualAnimation::BarVisualAnimation() = default;
 
 BarVisualAnimation::~BarVisualAnimation() {
@@ -95,16 +97,25 @@ void BarVisualAnimation::render(notcurses* nc) {
         // Simple scaling for visualization
         const unsigned int bar_height = static_cast<unsigned int>(std::round(band_energy * max_bar_height));
 
+        // Determine glyph based on energy/height
+        const std::size_t glyph_count = kAsciiGlyphs.size();
+        const std::size_t glyph_idx = (glyph_count > 1)
+                                          ? std::min<std::size_t>(
+                                                glyph_count - 1,
+                                                static_cast<std::size_t>(std::round(
+                                                    band_energy * static_cast<float>(glyph_count - 1))))
+                                          : 0;
+        const char glyph = kAsciiGlyphs[glyph_idx];
+
         // Draw each bar
         for (unsigned int h = 0; h < bar_height; ++h) {
             for (unsigned int w = 0; w < bar_width; ++w) {
                 ncplane_set_fg_rgb8(plane_, 0, 255, 0); // Green bars
                 ncplane_set_bg_rgb8(plane_, 0, 0, 0);   // Black background
-                ncplane_putstr_yx(plane_, plane_rows_ - 1 - h, i * bar_width + w, " ");
+                ncplane_putstr_yx(plane_, plane_rows_ - 1 - h, i * bar_width + w, std::string(1, glyph).c_str());
             }
         }
     }
 }
-
 } // namespace animations
 } // namespace why

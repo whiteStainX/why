@@ -18,15 +18,15 @@ This document outlines the detailed steps for implementing advanced features for
     *   Project builds successfully.
     *   Adding a new animation entry to `why.toml` (e.g., `[[animations]] type = "RandomText" z_index = 0`) results in `RandomTextAnimation` being loaded and rendered.
 
-### Step 2: Add a New Animation Type (e.g., `BarVisualAnimation`)
+### Step 2: Add a New Animation Type (e.g., `BarVisualAnimation`) (Completed)
 
 *   **Description**: Create a new concrete animation class that visualizes audio bands, demonstrating the extensibility of the new system. This animation will draw a simple bar graph based on `band_energies`.
-*   **Files Changed**: New files `src/animations/bar_visual_animation.h`, `src/animations/bar_visual_animation.cpp`, `src/animations/animation_manager.cpp` (to instantiate the new animation).
+*   **Files Changed**: New files `src/animations/bar_visual_animation.h`, `src/animations/bar_visual_animation.cpp`, `src/animations/animation_manager.cpp` (to instantiate the new animation), `CMakeLists.txt` (explicitly added `bar_visual_animation.cpp`).
 *   **Success Criteria**:
     *   `BarVisualAnimation` class exists, inherits from `Animation`, and implements all its virtual methods.
     *   `BarVisualAnimation::init` creates its own `ncplane`.
-    *   `BarVisualAnimation::update` calculates bar heights based on `band_energies`.
-    *   `BarVisualAnimation::render` draws the bar graph to its `ncplane`.
+    *   `BarVisualAnimation::update` calculates bar heights based on `band_energies` (including normalization).
+    *   `BarVisualAnimation::render` draws the bar graph to its `ncplane` using ASCII characters.
     *   `AnimationManager` can instantiate `BarVisualAnimation` based on configuration.
     *   Project builds successfully.
     *   Adding `[[animations]] type = "BarVisual" z_index = 1` to `why.toml` results in the bar visual being rendered alongside `RandomTextAnimation`.

@@ -32,6 +32,7 @@ private:
     std::vector<float> current_bands_;
     unsigned int plane_rows_ = 0;
     unsigned int plane_cols_ = 0;
+    static const std::string kAsciiGlyphs;
 };
 
 } // namespace animations

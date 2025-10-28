@@ -2,7 +2,6 @@
 #include <iostream> // For std::clog and std::cerr
 #include "random_text_animation.h" // Include for RandomTextAnimation
 #include "bar_visual_animation.h" // Include for BarVisualAnimation
-#include "static_circle_animation.h" // Include for StaticCircleAnimation
 
 namespace why {
 namespace animations {
@@ -44,9 +43,6 @@ void AnimationManager::load_animations(notcurses* nc, const AppConfig& config) {
         } else if (cleaned_type == "BarVisual") {
             new_animation = std::make_unique<BarVisualAnimation>();
             std::clog << "[AnimationManager::load_animations] Created BarVisualAnimation." << std::endl;
-        } else if (cleaned_type == "StaticCircle") {
-            new_animation = std::make_unique<StaticCircleAnimation>();
-            std::clog << "[AnimationManager::load_animations] Created StaticCircleAnimation." << std::endl;
         }
         // Add more animation types here as they are implemented
 

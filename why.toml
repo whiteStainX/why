@@ -49,3 +49,7 @@ z_index = 0
 [[animations]]
 type = "BarVisual"
 z_index = 1
+
+[[animations]]
+type = "StaticCircle"
+z_index = 2

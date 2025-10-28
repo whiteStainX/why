@@ -1,7 +1,8 @@
 #include "animation_manager.h"
+#include <iostream> // For std::clog and std::cerr
 #include "random_text_animation.h" // Include for RandomTextAnimation
 #include "bar_visual_animation.h" // Include for BarVisualAnimation
-#include <iostream>
+#include "static_circle_animation.h" // Include for StaticCircleAnimation
 
 namespace why {
 namespace animations {
@@ -43,6 +44,9 @@ void AnimationManager::load_animations(notcurses* nc, const AppConfig& config) {
         } else if (cleaned_type == "BarVisual") {
             new_animation = std::make_unique<BarVisualAnimation>();
             std::clog << "[AnimationManager::load_animations] Created BarVisualAnimation." << std::endl;
+        } else if (cleaned_type == "StaticCircle") {
+            new_animation = std::make_unique<StaticCircleAnimation>();
+            std::clog << "[AnimationManager::load_animations] Created StaticCircleAnimation." << std::endl;
         }
         // Add more animation types here as they are implemented
 
@@ -72,6 +76,15 @@ void AnimationManager::render_all(notcurses* nc) {
     std::sort(animations_.begin(), animations_.end(), [](const auto& a, const auto& b) {
         return a->get_z_index() < b->get_z_index();
     });
+
+    // Explicitly set Z-order for each plane
+    for (const auto& anim : animations_) {
+        if (anim->get_plane()) {
+            // Move planes to the bottom first, then they will be moved up by subsequent animations
+            // based on their sorted z_index. This ensures correct relative ordering.
+            ncplane_move_bottom(anim->get_plane());
+        }
+    }
 
     for (const auto& anim : animations_) {
         if (anim->is_active()) {

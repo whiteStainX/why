@@ -23,12 +23,13 @@ set(WHY_SOURCES
   src/dsp.cpp
   src/animations/random_text_animation.cpp
   src/animations/bar_visual_animation.cpp
+  src/animations/static_circle_animation.cpp
   external/kissfft/kiss_fft.c
 )
 
 file(GLOB_RECURSE ANIMATION_SOURCES "src/animations/*.cpp")
 
-add_executable(why ${WHY_SOURCES} ${ANIMATION_SOURCES})
+add_executable(why ${WHY_SOURCES} ${ANIMATION_SOURCES} why.toml)
 
 # --- includes ---
 target_include_directories(why PRIVATE

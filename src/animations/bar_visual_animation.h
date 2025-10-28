@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include <notcurses/notcurses.h>
@@ -30,6 +31,8 @@ public:
     ncplane* get_plane() const override { return plane_; }
 
 private:
+    static const std::string kAsciiGlyphs;
+
     ncplane* plane_ = nullptr;
     int z_index_ = 0;
     bool is_active_ = true; // New: internal active state

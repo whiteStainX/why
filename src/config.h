@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "renderer.h"
+
 
 namespace why {
 
@@ -62,6 +62,12 @@ struct PluginConfig {
     bool safe_mode = false;
 };
 
+struct AnimationConfig {
+    std::string type;
+    int z_index = 0;
+    // Add more generic parameters as needed, e.g., std::map<std::string, std::string> params;
+};
+
 struct AppConfig {
     std::string log_level = "info";
     AudioConfig audio;
@@ -69,6 +75,7 @@ struct AppConfig {
     VisualConfig visual;
     RuntimeConfig runtime;
     PluginConfig plugins;
+    std::vector<AnimationConfig> animations;
 };
 
 struct ConfigLoadResult {

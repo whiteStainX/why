@@ -1,19 +1,19 @@
 #pragma once
 
-#include <random>
-#include <string>
-#include <chrono>
+#include <vector>
+
+#include <notcurses/notcurses.h>
 
 #include "animation.h"
-#include "../config.h" // Explicitly include AppConfig
+#include "../config.h"
 
 namespace why {
 namespace animations {
 
-class RandomTextAnimation : public Animation {
+class StaticCircleAnimation : public Animation {
 public:
-    RandomTextAnimation();
-    ~RandomTextAnimation() override;
+    StaticCircleAnimation();
+    ~StaticCircleAnimation() override;
 
     void init(notcurses* nc, const AppConfig& config) override;
     void update(float delta_time,
@@ -23,15 +23,14 @@ public:
     void render(notcurses* nc) override;
 
     bool is_active() const override { return true; } // Always active for now
-    int get_z_index() const override { return 0; } // Default Z-index
+    int get_z_index() const override { return z_index_; }
     ncplane* get_plane() const override { return plane_; }
 
 private:
-    std::mt19937_64 rng_;
-    std::uniform_int_distribution<std::string::size_type> dist_;
-    static const std::string chars_;
     ncplane* plane_ = nullptr;
-    std::string current_text_;
+    int z_index_ = 0;
+    unsigned int plane_rows_ = 0;
+    unsigned int plane_cols_ = 0;
 };
 
 } // namespace animations

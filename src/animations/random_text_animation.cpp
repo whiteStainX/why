@@ -1,3 +1,6 @@
+#include <notcurses/notcurses.h>
+#include <iostream> // For std::clog and std::cerr
+
 #include "random_text_animation.h"
 
 namespace why {
@@ -10,28 +13,64 @@ RandomTextAnimation::RandomTextAnimation()
     : rng_(std::chrono::steady_clock::now().time_since_epoch().count()),
       dist_(0, chars_.size() - 1) {}
 
-void RandomTextAnimation::render(notcurses* nc,
-                                 float time_s,
-                                 const AudioMetrics& metrics,
-                                 const std::vector<float>& bands,
-                                 float beat_strength) {
+RandomTextAnimation::~RandomTextAnimation() {
+    if (plane_) {
+        ncplane_destroy(plane_);
+    }
+}
+
+void RandomTextAnimation::init(notcurses* nc, const AppConfig& config) {
+    // Create a new plane for this animation
     ncplane* stdplane = notcurses_stdplane(nc);
     unsigned int plane_rows = 0;
     unsigned int plane_cols = 0;
     ncplane_dim_yx(stdplane, &plane_rows, &plane_cols);
 
-    // Clear the screen
-    ncplane_erase(stdplane);
+    // Log dimensions for debugging
+    std::clog << "[RandomTextAnimation::init] stdplane dimensions: " << plane_rows << "x" << plane_cols << std::endl;
 
-    // Display random text
-    std::string random_text;
-    for (unsigned int i = 0; i < plane_cols / 2; ++i) { // Display half the width to avoid overflow with wide characters
-        random_text += chars_[dist_(rng_)];
+    ncplane_options p_opts{};
+    p_opts.rows = plane_rows;
+    p_opts.cols = plane_cols;
+    p_opts.y = 0;
+    p_opts.x = 0;
+    plane_ = ncplane_create(stdplane, &p_opts);
+    if (!plane_) {
+        std::cerr << "[RandomTextAnimation::init] Failed to create ncplane!" << std::endl;
+    } else {
+        std::clog << "[RandomTextAnimation::init] ncplane created successfully." << std::endl;
     }
+}
 
-    ncplane_set_fg_rgb8(stdplane, 255, 255, 255); // White foreground
-    ncplane_set_bg_rgb8(stdplane, 0, 0, 0);     // Black background
-    ncplane_putstr_yx(stdplane, plane_rows / 2, (plane_cols - random_text.length()) / 2, random_text.c_str());
+void RandomTextAnimation::update(float delta_time,
+                                 const AudioMetrics& metrics,
+                                 const std::vector<float>& bands,
+                                 float beat_strength) {
+    // Generate random text in the update phase
+    if (!plane_) return;
+
+    unsigned int plane_rows = 0;
+    unsigned int plane_cols = 0;
+    ncplane_dim_yx(plane_, &plane_rows, &plane_cols);
+
+    current_text_.clear();
+    for (unsigned int i = 0; i < plane_cols / 2; ++i) { // Display half the width to avoid overflow with wide characters
+        current_text_ += chars_[dist_(rng_)];
+    }
+}
+
+void RandomTextAnimation::render(notcurses* nc) {
+    if (!plane_) return;
+
+    ncplane_erase(plane_);
+
+    unsigned int plane_rows = 0;
+    unsigned int plane_cols = 0;
+    ncplane_dim_yx(plane_, &plane_rows, &plane_cols);
+
+    ncplane_set_fg_rgb8(plane_, 255, 255, 255); // White foreground
+    ncplane_set_bg_rgb8(plane_, 0, 0, 0);     // Black background
+    ncplane_putstr_yx(plane_, plane_rows / 2, (plane_cols - current_text_.length()) / 2, current_text_.c_str());
 }
 
 } // namespace animations

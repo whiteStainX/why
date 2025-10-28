@@ -23,6 +23,7 @@ struct RawArray {
 struct RawConfig {
     std::unordered_map<std::string, RawScalar> scalars;
     std::unordered_map<std::string, RawArray> arrays;
+    std::vector<std::unordered_map<std::string, RawScalar>> animation_configs;
 };
 
 std::string ltrim(std::string_view sv) {
@@ -124,7 +125,8 @@ void parse_file(const std::string& path, RawConfig& out, std::vector<std::string
     loaded_file = true;
 
     std::string line;
-    std::string section;
+    std::string current_section;
+    std::unordered_map<std::string, RawScalar>* current_animation_map = nullptr;
     int line_number = 0;
     while (std::getline(file, line)) {
         ++line_number;
@@ -132,10 +134,26 @@ void parse_file(const std::string& path, RawConfig& out, std::vector<std::string
         if (trimmed.empty() || trimmed[0] == '#') {
             continue;
         }
+
         if (trimmed.front() == '[' && trimmed.back() == ']') {
-            section = trim(trimmed.substr(1, trimmed.size() - 2));
+            if (trimmed.front() == '[' && trimmed.at(1) == '[' && trimmed.back() == ']' && trimmed.at(trimmed.size() - 2) == ']') {
+                // This is an array of tables, e.g., [[animations]]
+                std::string array_name = trim(trimmed.substr(2, trimmed.size() - 4));
+                if (array_name == "animations") {
+                    out.animation_configs.emplace_back();
+                    current_animation_map = &out.animation_configs.back();
+                } else {
+                    current_animation_map = nullptr; // Stop collecting for animations
+                }
+                current_section.clear(); // Clear single-bracket section
+            } else {
+                // This is a single-bracket section, e.g., [audio]
+                current_section = trim(trimmed.substr(1, trimmed.size() - 2));
+                current_animation_map = nullptr; // Stop collecting for animations
+            }
             continue;
         }
+
         const std::size_t eq = trimmed.find('=');
         if (eq == std::string::npos) {
             std::ostringstream oss;
@@ -145,20 +163,29 @@ void parse_file(const std::string& path, RawConfig& out, std::vector<std::string
         }
         std::string key = trim(trimmed.substr(0, eq));
         std::string value = strip_inline_comment(trimmed.substr(eq + 1));
-        if (!section.empty()) {
-            key = section + "." + key;
-        }
-        if (value.size() >= 2 && value.front() == '[' && value.back() == ']') {
-            std::string inner = trim(value.substr(1, value.size() - 2));
-            RawArray array;
-            array.values = parse_array_values(inner, line_number, warnings);
-            array.line = line_number;
-            out.arrays[key] = array;
-        } else {
+
+        if (current_animation_map) {
             RawScalar scalar;
             scalar.value = value;
             scalar.line = line_number;
-            out.scalars[key] = scalar;
+            (*current_animation_map)[key] = scalar;
+        } else {
+            std::string full_key = key;
+            if (!current_section.empty()) {
+                full_key = current_section + "." + key;
+            }
+            if (value.size() >= 2 && value.front() == '[' && value.back() == ']') {
+                std::string inner = trim(value.substr(1, value.size() - 2));
+                RawArray array;
+                array.values = parse_array_values(inner, line_number, warnings);
+                array.line = line_number;
+                out.arrays[full_key] = array;
+            } else {
+                RawScalar scalar;
+                scalar.value = value;
+                scalar.line = line_number;
+                out.scalars[full_key] = scalar;
+            }
         }
     }
 }
@@ -396,6 +423,28 @@ ConfigLoadResult load_app_config(const std::string& path) {
         result.config.plugins.autoload = array_it->second.values;
     }
     assign_scalar(raw, "plugins.safe_mode", result.config.plugins.safe_mode, parse_bool, result.warnings);
+
+    // Parse animation configurations
+    for (const auto& raw_anim_config : raw.animation_configs) {
+        AnimationConfig anim_config;
+        const auto type_it = raw_anim_config.find("type");
+        if (type_it != raw_anim_config.end()) {
+            anim_config.type = type_it->second.value;
+        } else {
+            std::ostringstream oss;
+            oss << "Animation configuration missing 'type' for an entry.";
+            result.warnings.push_back(oss.str());
+            continue;
+        }
+
+        const auto z_index_it = raw_anim_config.find("z_index");
+        if (z_index_it != raw_anim_config.end()) {
+            parse_int32(z_index_it->second.value, anim_config.z_index);
+        }
+        // Future: Parse generic parameters here
+
+        result.config.animations.push_back(anim_config);
+    }
 
     // Sanity checks
     if (result.config.audio.capture.sample_rate == 0) {

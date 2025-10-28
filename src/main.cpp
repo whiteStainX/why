@@ -132,8 +132,8 @@ int main(int argc, char** argv) {
     why::AudioMetrics audio_metrics{};
     audio_metrics.active = audio_active;
 
-    // Set the initial animation
-    why::set_active_animation(std::make_unique<why::animations::RandomTextAnimation>());
+    // Load animations from config
+    why::load_animations_from_config(nc, config);
 
     bool running = true;
     const auto start_time = std::chrono::steady_clock::now();

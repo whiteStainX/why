@@ -21,12 +21,19 @@ set(WHY_SOURCES
   src/plugins.cpp
   src/renderer.cpp
   src/dsp.cpp
+  src/animations/random_text_animation.cpp
+  src/animations/bar_visual_animation.cpp
+  src/animations/static_circle_animation.cpp
   external/kissfft/kiss_fft.c
 )
 
 file(GLOB_RECURSE ANIMATION_SOURCES "src/animations/*.cpp")
 
 add_executable(why ${WHY_SOURCES} ${ANIMATION_SOURCES})
+
+# Add a custom target to track changes in why.toml
+add_custom_target(config_dependency ALL DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/why.toml)
+add_dependencies(why config_dependency)
 
 # --- includes ---
 target_include_directories(why PRIVATE

@@ -33,9 +33,9 @@ void BarVisualAnimation::init(notcurses* nc, const AppConfig& config) {
     p_opts.x = 0;
     plane_ = ncplane_create(stdplane, &p_opts);
     if (!plane_) {
-        std::cerr << "[BarVisualAnimation::init] Failed to create ncplane!" << std::endl;
+        // std::cerr << "[BarVisualAnimation::init] Failed to create ncplane!" << std::endl;
     } else {
-        std::clog << "[BarVisualAnimation::init] ncplane created successfully with dimensions: " << plane_rows_ << "x" << plane_cols_ << std::endl;
+        // std::clog << "[BarVisualAnimation::init] ncplane created successfully with dimensions: " << plane_rows_ << "x" << plane_cols_ << std::endl;
     }
 
     // Set z-index and initial active state from config

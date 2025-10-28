@@ -28,27 +28,22 @@ std::string clean_string_value(std::string value) {
 } // namespace
 
 void AnimationManager::load_animations(notcurses* nc, const AppConfig& app_config) {
-    std::clog << "[AnimationManager::load_animations] Attempting to load " << app_config.animations.size() << " animations." << std::endl;
     for (const auto& anim_config : app_config.animations) {
-        std::clog << "[AnimationManager::load_animations] Processing animation config: type=" << anim_config.type << ", z_index=" << anim_config.z_index << ", initially_active=" << anim_config.initially_active << std::endl;
         std::unique_ptr<Animation> new_animation;
         std::string cleaned_type = clean_string_value(anim_config.type);
 
         if (cleaned_type == "RandomText") {
             new_animation = std::make_unique<RandomTextAnimation>();
-            std::clog << "[AnimationManager::load_animations] Created RandomTextAnimation." << std::endl;
         } else if (cleaned_type == "BarVisual") {
             new_animation = std::make_unique<BarVisualAnimation>();
-            std::clog << "[AnimationManager::load_animations] Created BarVisualAnimation." << std::endl;
         }
         // Add more animation types here as they are implemented
 
         if (new_animation) {
             new_animation->init(nc, app_config); // Pass the full app_config for init
             animations_.push_back({std::move(new_animation), anim_config});
-            std::clog << "[AnimationManager::load_animations] Initialized and added animation." << std::endl;
         } else {
-            std::cerr << "[AnimationManager::load_animations] Unknown animation type: " << anim_config.type << std::endl;
+            // std::cerr << "[AnimationManager::load_animations] Unknown animation type: " << anim_config.type << std::endl;
         }
     }
 }
@@ -61,17 +56,34 @@ void AnimationManager::update_all(float delta_time,
         Animation* anim = managed_anim.animation.get();
         const AnimationConfig& config = managed_anim.config;
 
-        bool should_be_active = config.initially_active; // Start with initial state
+        bool meets_all_conditions = true;
 
-        // Evaluate trigger conditions
-        if (config.trigger_band_index != -1 && config.trigger_band_index < static_cast<int>(bands.size())) {
-            if (bands[config.trigger_band_index] < config.trigger_threshold) {
-                should_be_active = false; // Deactivate if band energy is below threshold
+        // Evaluate band trigger condition
+        if (config.trigger_band_index != -1) {
+            if (config.trigger_band_index < static_cast<int>(bands.size())) {
+                if (bands[config.trigger_band_index] < config.trigger_threshold) {
+                    meets_all_conditions = false;
+                }
+            } else {
+                meets_all_conditions = false; // Invalid band index means condition not met
             }
         }
 
-        if (beat_strength < config.trigger_beat_min || beat_strength > config.trigger_beat_max) {
-            should_be_active = false; // Deactivate if beat strength is outside range
+        // Evaluate beat trigger condition
+        if (config.trigger_beat_min > 0.0f || config.trigger_beat_max < 1.0f) {
+            if (beat_strength < config.trigger_beat_min || beat_strength > config.trigger_beat_max) {
+                meets_all_conditions = false;
+            }
+        }
+
+        // Determine final should_be_active state
+        bool should_be_active;
+        if (config.trigger_band_index == -1 && config.trigger_beat_min == 0.0f && config.trigger_beat_max == 1.0f) {
+            // No specific triggers defined, use initially_active state
+            should_be_active = config.initially_active;
+        } else {
+            // Triggers are defined, so activation depends on meeting all conditions
+            should_be_active = meets_all_conditions;
         }
 
         // Apply activation/deactivation

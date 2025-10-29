@@ -78,15 +78,16 @@ void RandomTextAnimation::activate() {
     }
     time_since_last_trigger_ = trigger_cooldown_s_;
     condition_previously_met_ = false;
+    plane_needs_clear_ = false;
 }
 
 void RandomTextAnimation::deactivate() {
     is_active_ = false;
-    if (plane_) {
-        ncplane_erase(plane_); // Clear the plane when deactivated
-    }
-    // active_lines_.clear(); // Do not clear immediately, let them fade out
     condition_previously_met_ = false;
+    if (active_lines_.empty() && plane_) {
+        ncplane_erase(plane_);
+        plane_needs_clear_ = false;
+    }
 }
 
 void RandomTextAnimation::update(float delta_time,
@@ -96,6 +97,8 @@ void RandomTextAnimation::update(float delta_time,
     if (!plane_) return;
 
     (void)metrics;
+
+    const bool had_lines_before_update = !active_lines_.empty();
 
     time_since_last_trigger_ += delta_time;
 
@@ -162,15 +165,20 @@ void RandomTextAnimation::update(float delta_time,
                         }),
         active_lines_.end());
 
+    if (had_lines_before_update && active_lines_.empty()) {
+        plane_needs_clear_ = true;
+    }
+
     clamp_line_positions();
 }
 
 void RandomTextAnimation::render(notcurses* nc) {
-    if (!plane_ || !is_active_) return;
+    if (!plane_) return;
 
     (void)nc;
 
     ncplane_erase(plane_);
+    plane_needs_clear_ = false;
 
     unsigned int plane_rows = 0;
     unsigned int plane_cols = 0;

@@ -26,7 +26,7 @@ public:
     void activate() override;
     void deactivate() override;
 
-    bool is_active() const override { return is_active_; } // Use internal state
+    bool is_active() const override { return is_active_ || !active_lines_.empty() || plane_needs_clear_; }
     int get_z_index() const override { return z_index_; }
     ncplane* get_plane() const override { return plane_; }
 
@@ -57,6 +57,7 @@ private:
     ncplane* plane_ = nullptr;
     int z_index_ = 0;
     bool is_active_ = true; // New: internal active state
+    bool plane_needs_clear_ = false;
     int trigger_band_index_ = -1;
     float trigger_threshold_ = 0.0f;
     float trigger_beat_min_ = 0.0f;

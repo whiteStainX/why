@@ -33,19 +33,21 @@ public:
 private:
     struct DisplayedLine {
         std::string text;
-        std::vector<std::string> words;
-        std::size_t current_word_index = 0;
-        float time_since_last_word = 0.0f;
+        std::size_t revealed_chars = 0;
+        float time_since_last_char = 0.0f;
+        float char_interval = 0.0f;
         bool completed = false;
         float display_elapsed = 0.0f;
         float fade_elapsed = 0.0f;
         bool fading_out = false;
+        int x_pos = 0;
         int y_pos = 0;
     };
 
     void load_quotes();
     void spawn_line();
-    void update_line_positions();
+    void clamp_line_positions();
+    float compute_char_interval(const std::string& text) const;
     std::string select_random_quote();
 
     std::mt19937_64 rng_;
@@ -66,8 +68,7 @@ private:
     int max_active_lines_ = 4;
     float time_since_last_trigger_ = 0.0f;
     std::string text_file_path_ = "assets/dune.txt";
-    static constexpr int kBottomMargin = 2;
-    static constexpr int kLineSpacing = 2;
+    bool condition_previously_met_ = false;
 };
 
 } // namespace animations

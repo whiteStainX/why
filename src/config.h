@@ -71,6 +71,7 @@ struct AnimationConfig {
     float trigger_threshold = 0.0f; // Threshold for band energy or beat strength
     float trigger_beat_min = 0.0f; // Minimum beat strength to activate
     float trigger_beat_max = 1.0f; // Maximum beat strength to activate
+    std::string text_file_path; // New: Path to text file for animations like RandomText
     // Add more generic parameters as needed, e.g., std::map<std::string, std::string> params;
 };
 

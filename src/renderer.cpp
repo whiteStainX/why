@@ -34,8 +34,23 @@ void render_frame(notcurses* nc,
     // Clear the standard plane (background)
     ncplane_erase(stdplane);
 
+    static float previous_time_s = time_s;
+    static bool first_frame = true;
+    float delta_time = 0.0f;
+    if (first_frame) {
+        first_frame = false;
+    } else {
+        delta_time = time_s - previous_time_s;
+        if (delta_time < 0.0f) {
+            delta_time = 0.0f;
+        } else if (delta_time > 1.0f) {
+            delta_time = 1.0f;
+        }
+    }
+    previous_time_s = time_s;
+
     // Update and render all animations managed by the AnimationManager
-    animation_manager.update_all(time_s, metrics, bands, beat_strength);
+    animation_manager.update_all(delta_time, metrics, bands, beat_strength);
     animation_manager.render_all(nc);
 
     // Display overlay metrics if requested

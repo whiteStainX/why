@@ -3,6 +3,7 @@
 #include "random_text_animation.h" // Include for RandomTextAnimation
 #include "bar_visual_animation.h" // Include for BarVisualAnimation
 #include "ascii_matrix_animation.h" // Include for AsciiMatrixAnimation
+#include "cyber_rain_animation.h" // Include for CyberRainAnimation
 
 namespace why {
 namespace animations {
@@ -39,6 +40,8 @@ void AnimationManager::load_animations(notcurses* nc, const AppConfig& app_confi
             new_animation = std::make_unique<BarVisualAnimation>();
         } else if (cleaned_type == "AsciiMatrix") {
             new_animation = std::make_unique<AsciiMatrixAnimation>();
+        } else if (cleaned_type == "CyberRain") {
+            new_animation = std::make_unique<CyberRainAnimation>();
         }
         // Add more animation types here as they are implemented
 

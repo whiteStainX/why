@@ -78,3 +78,12 @@ matrix_beat_boost = 2.0
 matrix_beat_threshold = 0.55
 plane_y = 40
 plane_x = 10
+
+[[animations]]
+type = "CyberRain"
+z_index = 2
+initially_active = false
+trigger_band_index = 30 # High frequency band
+trigger_threshold = 0.001 # Lowered for easier triggering
+display_duration_s = 2.0 # Persistence
+fade_duration_s = 2.0 # Fade out time

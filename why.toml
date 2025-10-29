@@ -45,19 +45,18 @@ safe_mode = false
 [[animations]]
 type = "RandomText"
 z_index = 0
-initially_active = true
-trigger_threshold = 0.2
-trigger_beat_min = 0.1 # Lower threshold for testing
-trigger_cooldown_s = 0.75
-type_speed_words_per_s = 4.0
-display_duration_s = 3.5
-fade_duration_s = 1.2
-max_active_lines = 4
+initially_active = false
+trigger_beat_min = 0.1 # Activate when beat strength is above 0.1
 text_file_path = "assets/dune.txt"
+trigger_cooldown_s = 1.0 # Increased cooldown
+type_speed_words_per_s = 2.0 # Slower typing speed
+display_duration_s = 5.0 # Longer display duration
+fade_duration_s = 2.0 # Longer fade duration
+max_active_lines = 3 # Fewer active lines for better centering
 
 [[animations]]
 type = "BarVisual"
 z_index = 1
 initially_active = false
 trigger_band_index = 0 # Trigger on the first frequency band
-trigger_threshold = 0.001 # Lowered threshold for testing
+trigger_threshold = 0.01 # Activate when energy in band 0 is above 0.01

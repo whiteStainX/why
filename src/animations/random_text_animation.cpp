@@ -287,10 +287,17 @@ void RandomTextAnimation::update_line_positions() {
     ncplane_dim_yx(plane_, &plane_rows, &plane_cols);
     (void)plane_cols;
 
-    int current_y = static_cast<int>(plane_rows) - kBottomMargin;
-    for (auto it = active_lines_.rbegin(); it != active_lines_.rend(); ++it) {
-        it->y_pos = std::max(0, current_y);
-        current_y -= kLineSpacing;
+    if (active_lines_.empty()) {
+        return;
+    }
+
+    const int total_lines_height = static_cast<int>(active_lines_.size()) * kLineSpacing;
+    int start_y = (static_cast<int>(plane_rows) - total_lines_height) / 2;
+
+    int current_y = start_y;
+    for (auto& line : active_lines_) {
+        line.y_pos = std::max(0, current_y);
+        current_y += kLineSpacing;
     }
 }
 

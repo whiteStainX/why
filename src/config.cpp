@@ -479,6 +479,11 @@ ConfigLoadResult load_app_config(const std::string& path) {
             parse_float32(trigger_beat_max_it->second.value, anim_config.trigger_beat_max);
         }
 
+        const auto text_file_path_it = raw_anim_config.find("text_file_path");
+        if (text_file_path_it != raw_anim_config.end()) {
+            anim_config.text_file_path = sanitize_string_value(text_file_path_it->second.value);
+        }
+
         // Future: Parse generic parameters here
 
         result.config.animations.push_back(anim_config);

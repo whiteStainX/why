@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <cctype>
 #include <fstream>
-#include <sstream>
 
 #include "random_text_animation.h"
 
@@ -78,6 +77,7 @@ void RandomTextAnimation::activate() {
         ncplane_set_bg_rgb8(plane_, 0, 0, 0);     // Black background
     }
     time_since_last_trigger_ = trigger_cooldown_s_;
+    condition_previously_met_ = false;
 }
 
 void RandomTextAnimation::deactivate() {
@@ -85,48 +85,56 @@ void RandomTextAnimation::deactivate() {
     if (plane_) {
         ncplane_erase(plane_); // Clear the plane when deactivated
     }
-    active_lines_.clear();
+    // active_lines_.clear(); // Do not clear immediately, let them fade out
+    condition_previously_met_ = false;
 }
 
 void RandomTextAnimation::update(float delta_time,
                                  const AudioMetrics& metrics,
                                  const std::vector<float>& bands,
                                  float beat_strength) {
-    if (!plane_ || !is_active_) return;
+    if (!plane_) return;
 
     (void)metrics;
 
     time_since_last_trigger_ += delta_time;
 
-    float audio_value = beat_strength;
-    if (trigger_band_index_ >= 0 && trigger_band_index_ < static_cast<int>(bands.size())) {
-        audio_value = bands[static_cast<std::size_t>(trigger_band_index_)];
+    // Only attempt to spawn new lines if the animation is currently active
+    if (is_active_) {
+        float audio_value = beat_strength;
+        if (trigger_band_index_ >= 0 && trigger_band_index_ < static_cast<int>(bands.size())) {
+            audio_value = bands[static_cast<std::size_t>(trigger_band_index_)];
+        }
+
+        const bool beat_in_range = beat_strength >= trigger_beat_min_ && beat_strength <= trigger_beat_max_;
+        const bool condition_met = beat_in_range && audio_value >= trigger_threshold_;
+        if (condition_met && !condition_previously_met_ && time_since_last_trigger_ >= trigger_cooldown_s_) {
+            spawn_line();
+            time_since_last_trigger_ = 0.0f;
+        }
+        condition_previously_met_ = condition_met;
+    } else {
+        // If not active, reset condition_previously_met_ so it can trigger again when reactivated
+        condition_previously_met_ = false;
     }
 
-    const bool beat_in_range = beat_strength >= trigger_beat_min_ && beat_strength <= trigger_beat_max_;
-    if (beat_in_range && audio_value >= trigger_threshold_ && time_since_last_trigger_ >= trigger_cooldown_s_) {
-        spawn_line();
-        time_since_last_trigger_ = 0.0f;
-    }
-
-    const float word_interval = type_speed_words_per_s_ > 0.0f ? 1.0f / type_speed_words_per_s_ : 0.0f;
-
+    // Always update existing lines, regardless of whether the animation is currently spawning new ones
     for (auto& line : active_lines_) {
         if (!line.completed) {
-            if (word_interval <= 0.0f) {
-                line.current_word_index = line.words.size();
+            if (line.char_interval <= 0.0f || type_speed_words_per_s_ <= 0.0f) {
+                line.revealed_chars = line.text.size();
                 line.completed = true;
-                line.time_since_last_word = 0.0f;
+                line.time_since_last_char = 0.0f;
             } else {
-                line.time_since_last_word += delta_time;
-                while (line.time_since_last_word >= word_interval && line.current_word_index < line.words.size()) {
-                    line.time_since_last_word -= word_interval;
-                    ++line.current_word_index;
+                line.time_since_last_char += delta_time;
+                while (line.time_since_last_char >= line.char_interval && line.revealed_chars < line.text.size()) {
+                    line.time_since_last_char -= line.char_interval;
+                    ++line.revealed_chars;
                 }
-                if (line.current_word_index >= line.words.size()) {
-                    line.current_word_index = line.words.size();
+                if (line.revealed_chars >= line.text.size()) {
+                    line.revealed_chars = line.text.size();
                     line.completed = true;
-                    line.time_since_last_word = 0.0f;
+                    line.time_since_last_char = 0.0f;
                 }
             }
         } else if (!line.fading_out) {
@@ -154,7 +162,7 @@ void RandomTextAnimation::update(float delta_time,
                         }),
         active_lines_.end());
 
-    update_line_positions();
+    clamp_line_positions();
 }
 
 void RandomTextAnimation::render(notcurses* nc) {
@@ -171,22 +179,8 @@ void RandomTextAnimation::render(notcurses* nc) {
     ncplane_set_bg_rgb8(plane_, 0, 0, 0);
 
     for (const auto& line : active_lines_) {
-        if (line.words.empty()) {
+        if (line.revealed_chars == 0 || line.text.empty()) {
             continue;
-        }
-
-        const std::size_t word_count = std::min(line.current_word_index, line.words.size());
-        if (word_count == 0) {
-            continue;
-        }
-
-        std::string rendered_text;
-        rendered_text.reserve(line.text.size());
-        for (std::size_t i = 0; i < word_count; ++i) {
-            rendered_text.append(line.words[i]);
-            if (i + 1 < word_count) {
-                rendered_text.push_back(' ');
-            }
         }
 
         float fade_factor = 1.0f;
@@ -197,13 +191,11 @@ void RandomTextAnimation::render(notcurses* nc) {
         const unsigned char intensity = static_cast<unsigned char>(std::clamp(fade_factor, 0.0f, 1.0f) * 255.0f);
         ncplane_set_fg_rgb8(plane_, intensity, intensity, intensity);
 
-        int y = std::clamp(line.y_pos, 0, static_cast<int>(plane_rows) - 1);
-        int x = (static_cast<int>(plane_cols) - static_cast<int>(rendered_text.length())) / 2;
-        if (x < 0) {
-            x = 0;
-        }
+        int y = plane_rows > 0 ? std::clamp(line.y_pos, 0, static_cast<int>(plane_rows) - 1) : 0;
+        int max_x = plane_cols > 0 ? static_cast<int>(plane_cols) - 1 : 0;
+        int x = std::clamp(line.x_pos, 0, std::max(0, max_x));
 
-        ncplane_putstr_yx(plane_, y, x, rendered_text.c_str());
+        ncplane_putnstr_yx(plane_, y, x, line.revealed_chars, line.text.c_str());
     }
 }
 
@@ -256,28 +248,44 @@ void RandomTextAnimation::spawn_line() {
         return;
     }
 
+    if (!plane_) {
+        return;
+    }
+
     if (static_cast<int>(active_lines_.size()) >= max_active_lines_) {
         active_lines_.erase(active_lines_.begin());
     }
 
     DisplayedLine line;
     line.text = select_random_quote();
-
-    std::istringstream iss(line.text);
-    std::string word;
-    while (iss >> word) {
-        line.words.push_back(word);
-    }
-
-    if (line.words.empty()) {
+    if (line.text.empty()) {
         return;
     }
 
+    line.char_interval = compute_char_interval(line.text);
+
+    unsigned int plane_rows = 0;
+    unsigned int plane_cols = 0;
+    ncplane_dim_yx(plane_, &plane_rows, &plane_cols);
+
+    if (plane_rows > 0) {
+        std::uniform_int_distribution<int> y_dist(0, static_cast<int>(plane_rows) - 1);
+        line.y_pos = y_dist(rng_);
+    } else {
+        line.y_pos = 0;
+    }
+
+    if (plane_cols > 0) {
+        std::uniform_int_distribution<int> x_dist(0, static_cast<int>(plane_cols) - 1);
+        line.x_pos = x_dist(rng_);
+    } else {
+        line.x_pos = 0;
+    }
+
     active_lines_.push_back(std::move(line));
-    update_line_positions();
 }
 
-void RandomTextAnimation::update_line_positions() {
+void RandomTextAnimation::clamp_line_positions() {
     if (!plane_) {
         return;
     }
@@ -285,20 +293,52 @@ void RandomTextAnimation::update_line_positions() {
     unsigned int plane_rows = 0;
     unsigned int plane_cols = 0;
     ncplane_dim_yx(plane_, &plane_rows, &plane_cols);
-    (void)plane_cols;
 
-    if (active_lines_.empty()) {
-        return;
-    }
+    const int max_y = plane_rows > 0 ? static_cast<int>(plane_rows) - 1 : 0;
+    const int max_x = plane_cols > 0 ? static_cast<int>(plane_cols) - 1 : 0;
 
-    const int total_lines_height = static_cast<int>(active_lines_.size()) * kLineSpacing;
-    int start_y = (static_cast<int>(plane_rows) - total_lines_height) / 2;
-
-    int current_y = start_y;
     for (auto& line : active_lines_) {
-        line.y_pos = std::max(0, current_y);
-        current_y += kLineSpacing;
+        line.y_pos = std::clamp(line.y_pos, 0, std::max(0, max_y));
+        line.x_pos = std::clamp(line.x_pos, 0, std::max(0, max_x));
     }
+}
+
+float RandomTextAnimation::compute_char_interval(const std::string& text) const {
+    if (type_speed_words_per_s_ <= 0.0f) {
+        return 0.0f;
+    }
+
+    std::size_t word_count = 0;
+    std::size_t character_count = 0;
+    bool in_word = false;
+
+    for (unsigned char ch : text) {
+        if (!std::isspace(ch)) {
+            ++character_count;
+            if (!in_word) {
+                in_word = true;
+                ++word_count;
+            }
+        } else {
+            in_word = false;
+        }
+    }
+
+    if (word_count == 0) {
+        word_count = character_count > 0 ? 1 : 0;
+    }
+
+    if (word_count == 0 || character_count == 0) {
+        return 0.0f;
+    }
+
+    const float average_chars_per_word = static_cast<float>(character_count) / static_cast<float>(word_count);
+    const float chars_per_second = type_speed_words_per_s_ * average_chars_per_word;
+    if (chars_per_second <= 0.0f) {
+        return 0.0f;
+    }
+
+    return 1.0f / chars_per_second;
 }
 
 } // namespace animations

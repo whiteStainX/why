@@ -81,14 +81,9 @@ plane_x = 10
 
 [[animations]]
 type = "CyberRain"
-z_index = 3
-initially_active = true
-trigger_band_index = 24 # Focus on higher frequencies from the FFT bands
-trigger_threshold = 0.02
-glyphs_file_path = "assets/cyber_rain.txt"
-type_speed_words_per_s = 16.0 # Controls the base scan speed across the plane
-trigger_cooldown_s = 1.2 # Controls the scan speed boost when the effect triggers
-display_duration_s = 0.75 # Persistence duration for the rain trails
-fade_duration_s = 1.1
-plane_y = 0
-plane_x = 0
+z_index = 2
+initially_active = false
+trigger_band_index = 30 # High frequency band
+trigger_threshold = 0.001 # Lowered for easier triggering
+display_duration_s = 2.0 # Persistence
+fade_duration_s = 2.0 # Fade out time

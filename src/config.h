@@ -89,6 +89,11 @@ struct AnimationConfig {
     float matrix_beat_boost = 1.5f;      // Beat multiplier for matrix animations
     float matrix_beat_threshold = 0.6f;  // Beat threshold for matrix animations
     float rain_angle_degrees = 0.0f;     // Angle for cyber rain drops (degrees, relative to vertical)
+    float wave_speed_cols_per_s = 40.0f; // Sweep speed for lightning wave animations
+    int wave_front_width_cols = 2;       // Width of the solid lightning front in columns
+    int wave_tail_length_cols = 6;       // Number of trailing columns for fading tail
+    bool wave_alternate_direction = true; // Alternate sweep direction on each activation
+    bool wave_direction_right = true;     // Initial sweep direction when not alternating
     // Add more generic parameters as needed, e.g., std::map<std::string, std::string> params;
 };
 

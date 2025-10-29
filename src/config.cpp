@@ -582,6 +582,31 @@ ConfigLoadResult load_app_config(const std::string& path) {
             parse_float32(rain_angle_it->second.value, anim_config.rain_angle_degrees);
         }
 
+        const auto wave_speed_it = raw_anim_config.find("wave_speed_cols_per_s");
+        if (wave_speed_it != raw_anim_config.end()) {
+            parse_float32(wave_speed_it->second.value, anim_config.wave_speed_cols_per_s);
+        }
+
+        const auto wave_front_it = raw_anim_config.find("wave_front_width_cols");
+        if (wave_front_it != raw_anim_config.end()) {
+            parse_int32(wave_front_it->second.value, anim_config.wave_front_width_cols);
+        }
+
+        const auto wave_tail_it = raw_anim_config.find("wave_tail_length_cols");
+        if (wave_tail_it != raw_anim_config.end()) {
+            parse_int32(wave_tail_it->second.value, anim_config.wave_tail_length_cols);
+        }
+
+        const auto wave_alternate_it = raw_anim_config.find("wave_alternate_direction");
+        if (wave_alternate_it != raw_anim_config.end()) {
+            parse_bool(wave_alternate_it->second.value, anim_config.wave_alternate_direction);
+        }
+
+        const auto wave_direction_it = raw_anim_config.find("wave_direction_right");
+        if (wave_direction_it != raw_anim_config.end()) {
+            parse_bool(wave_direction_it->second.value, anim_config.wave_direction_right);
+        }
+
         // Future: Parse generic parameters here
 
         result.config.animations.push_back(anim_config);

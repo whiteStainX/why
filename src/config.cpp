@@ -607,6 +607,76 @@ ConfigLoadResult load_app_config(const std::string& path) {
             parse_bool(wave_direction_it->second.value, anim_config.wave_direction_right);
         }
 
+        const auto breathe_points_it = raw_anim_config.find("breathe_points");
+        if (breathe_points_it != raw_anim_config.end()) {
+            parse_int32(breathe_points_it->second.value, anim_config.breathe_points);
+        }
+
+        const auto breathe_min_radius_it = raw_anim_config.find("breathe_min_radius");
+        if (breathe_min_radius_it != raw_anim_config.end()) {
+            parse_float32(breathe_min_radius_it->second.value, anim_config.breathe_min_radius);
+        }
+
+        const auto breathe_max_radius_it = raw_anim_config.find("breathe_max_radius");
+        if (breathe_max_radius_it != raw_anim_config.end()) {
+            parse_float32(breathe_max_radius_it->second.value, anim_config.breathe_max_radius);
+        }
+
+        const auto breathe_radius_influence_it = raw_anim_config.find("breathe_audio_radius_influence");
+        if (breathe_radius_influence_it != raw_anim_config.end()) {
+            parse_float32(breathe_radius_influence_it->second.value, anim_config.breathe_audio_radius_influence);
+        }
+
+        const auto breathe_smoothing_it = raw_anim_config.find("breathe_smoothing_s");
+        if (breathe_smoothing_it != raw_anim_config.end()) {
+            parse_float32(breathe_smoothing_it->second.value, anim_config.breathe_smoothing_s);
+        }
+
+        const auto breathe_noise_it = raw_anim_config.find("breathe_noise_amount");
+        if (breathe_noise_it != raw_anim_config.end()) {
+            parse_float32(breathe_noise_it->second.value, anim_config.breathe_noise_amount);
+        }
+
+        const auto breathe_rotation_it = raw_anim_config.find("breathe_rotation_speed");
+        if (breathe_rotation_it != raw_anim_config.end()) {
+            parse_float32(breathe_rotation_it->second.value, anim_config.breathe_rotation_speed);
+        }
+
+        const auto breathe_vertical_it = raw_anim_config.find("breathe_vertical_scale");
+        if (breathe_vertical_it != raw_anim_config.end()) {
+            parse_float32(breathe_vertical_it->second.value, anim_config.breathe_vertical_scale);
+        }
+
+        const auto breathe_base_pulse_it = raw_anim_config.find("breathe_base_pulse_hz");
+        if (breathe_base_pulse_it != raw_anim_config.end()) {
+            parse_float32(breathe_base_pulse_it->second.value, anim_config.breathe_base_pulse_hz);
+        }
+
+        const auto breathe_pulse_weight_it = raw_anim_config.find("breathe_audio_pulse_weight");
+        if (breathe_pulse_weight_it != raw_anim_config.end()) {
+            parse_float32(breathe_pulse_weight_it->second.value, anim_config.breathe_audio_pulse_weight);
+        }
+
+        const auto breathe_band_index_it = raw_anim_config.find("breathe_band_index");
+        if (breathe_band_index_it != raw_anim_config.end()) {
+            parse_int32(breathe_band_index_it->second.value, anim_config.breathe_band_index);
+        }
+
+        const auto breathe_rms_weight_it = raw_anim_config.find("breathe_rms_weight");
+        if (breathe_rms_weight_it != raw_anim_config.end()) {
+            parse_float32(breathe_rms_weight_it->second.value, anim_config.breathe_rms_weight);
+        }
+
+        const auto breathe_beat_weight_it = raw_anim_config.find("breathe_beat_weight");
+        if (breathe_beat_weight_it != raw_anim_config.end()) {
+            parse_float32(breathe_beat_weight_it->second.value, anim_config.breathe_beat_weight);
+        }
+
+        const auto breathe_band_weight_it = raw_anim_config.find("breathe_band_weight");
+        if (breathe_band_weight_it != raw_anim_config.end()) {
+            parse_float32(breathe_band_weight_it->second.value, anim_config.breathe_band_weight);
+        }
+
         // Future: Parse generic parameters here
 
         result.config.animations.push_back(anim_config);

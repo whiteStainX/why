@@ -111,3 +111,25 @@ wave_direction_right = true
 trigger_cooldown_s = 0.2
 plane_y = 0
 plane_x = 0
+
+[[animations]]
+type = "Breathe"
+z_index = 2
+initially_active = true
+glyphs_file_path = "assets/breathe_animation.txt"
+display_duration_s = 0.9
+fade_duration_s = 1.4
+breathe_points = 72
+breathe_min_radius = 6.0
+breathe_max_radius = 18.0
+breathe_audio_radius_influence = 12.0
+breathe_smoothing_s = 0.16
+breathe_noise_amount = 0.35
+breathe_rotation_speed = 0.28
+breathe_vertical_scale = 0.55
+breathe_base_pulse_hz = 0.35
+breathe_audio_pulse_weight = 0.85
+breathe_band_index = 12
+breathe_rms_weight = 1.0
+breathe_beat_weight = 0.7
+breathe_band_weight = 0.6

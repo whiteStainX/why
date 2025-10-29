@@ -72,6 +72,11 @@ struct AnimationConfig {
     float trigger_beat_min = 0.0f; // Minimum beat strength to activate
     float trigger_beat_max = 1.0f; // Maximum beat strength to activate
     std::string text_file_path; // New: Path to text file for animations like RandomText
+    float type_speed_words_per_s = 4.0f; // Typing speed for word-by-word reveal
+    float display_duration_s = 3.0f;     // How long a fully revealed line remains
+    float fade_duration_s = 1.0f;        // Fade-out duration once display time elapses
+    float trigger_cooldown_s = 0.75f;    // Minimum time between spawning new lines
+    int max_active_lines = 4;            // Maximum number of simultaneous lines
     // Add more generic parameters as needed, e.g., std::map<std::string, std::string> params;
 };
 

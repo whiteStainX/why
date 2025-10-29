@@ -484,6 +484,31 @@ ConfigLoadResult load_app_config(const std::string& path) {
             anim_config.text_file_path = sanitize_string_value(text_file_path_it->second.value);
         }
 
+        const auto type_speed_it = raw_anim_config.find("type_speed_words_per_s");
+        if (type_speed_it != raw_anim_config.end()) {
+            parse_float32(type_speed_it->second.value, anim_config.type_speed_words_per_s);
+        }
+
+        const auto display_duration_it = raw_anim_config.find("display_duration_s");
+        if (display_duration_it != raw_anim_config.end()) {
+            parse_float32(display_duration_it->second.value, anim_config.display_duration_s);
+        }
+
+        const auto fade_duration_it = raw_anim_config.find("fade_duration_s");
+        if (fade_duration_it != raw_anim_config.end()) {
+            parse_float32(fade_duration_it->second.value, anim_config.fade_duration_s);
+        }
+
+        const auto trigger_cooldown_it = raw_anim_config.find("trigger_cooldown_s");
+        if (trigger_cooldown_it != raw_anim_config.end()) {
+            parse_float32(trigger_cooldown_it->second.value, anim_config.trigger_cooldown_s);
+        }
+
+        const auto max_lines_it = raw_anim_config.find("max_active_lines");
+        if (max_lines_it != raw_anim_config.end()) {
+            parse_int32(max_lines_it->second.value, anim_config.max_active_lines);
+        }
+
         // Future: Parse generic parameters here
 
         result.config.animations.push_back(anim_config);

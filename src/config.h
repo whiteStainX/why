@@ -82,6 +82,12 @@ struct AnimationConfig {
     std::optional<int> plane_x;          // Optional plane origin X for visuals that use dedicated planes
     std::optional<int> plane_rows;       // Optional plane height override
     std::optional<int> plane_cols;       // Optional plane width override
+    std::optional<int> matrix_rows;      // Optional number of rows for matrix-style animations
+    std::optional<int> matrix_cols;      // Optional number of columns for matrix-style animations
+    bool matrix_show_border = true;      // Whether to render a border around the matrix animation
+    std::string glyphs_file_path;        // Glyph file override for glyph-based animations
+    float matrix_beat_boost = 1.5f;      // Beat multiplier for matrix animations
+    float matrix_beat_threshold = 0.6f;  // Beat threshold for matrix animations
     // Add more generic parameters as needed, e.g., std::map<std::string, std::string> params;
 };
 

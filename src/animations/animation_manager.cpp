@@ -2,6 +2,7 @@
 #include <iostream> // For std::clog and std::cerr
 #include "random_text_animation.h" // Include for RandomTextAnimation
 #include "bar_visual_animation.h" // Include for BarVisualAnimation
+#include "ascii_matrix_animation.h" // Include for AsciiMatrixAnimation
 
 namespace why {
 namespace animations {
@@ -36,6 +37,8 @@ void AnimationManager::load_animations(notcurses* nc, const AppConfig& app_confi
             new_animation = std::make_unique<RandomTextAnimation>();
         } else if (cleaned_type == "BarVisual") {
             new_animation = std::make_unique<BarVisualAnimation>();
+        } else if (cleaned_type == "AsciiMatrix") {
+            new_animation = std::make_unique<AsciiMatrixAnimation>();
         }
         // Add more animation types here as they are implemented
 

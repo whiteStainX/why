@@ -541,6 +541,42 @@ ConfigLoadResult load_app_config(const std::string& path) {
             }
         }
 
+        const auto matrix_rows_it = raw_anim_config.find("matrix_rows");
+        if (matrix_rows_it != raw_anim_config.end()) {
+            int value = 0;
+            if (parse_int32(matrix_rows_it->second.value, value)) {
+                anim_config.matrix_rows = value;
+            }
+        }
+
+        const auto matrix_cols_it = raw_anim_config.find("matrix_cols");
+        if (matrix_cols_it != raw_anim_config.end()) {
+            int value = 0;
+            if (parse_int32(matrix_cols_it->second.value, value)) {
+                anim_config.matrix_cols = value;
+            }
+        }
+
+        const auto matrix_border_it = raw_anim_config.find("matrix_show_border");
+        if (matrix_border_it != raw_anim_config.end()) {
+            parse_bool(matrix_border_it->second.value, anim_config.matrix_show_border);
+        }
+
+        const auto glyphs_file_it = raw_anim_config.find("glyphs_file_path");
+        if (glyphs_file_it != raw_anim_config.end()) {
+            anim_config.glyphs_file_path = sanitize_string_value(glyphs_file_it->second.value);
+        }
+
+        const auto beat_boost_it = raw_anim_config.find("matrix_beat_boost");
+        if (beat_boost_it != raw_anim_config.end()) {
+            parse_float32(beat_boost_it->second.value, anim_config.matrix_beat_boost);
+        }
+
+        const auto beat_threshold_it = raw_anim_config.find("matrix_beat_threshold");
+        if (beat_threshold_it != raw_anim_config.end()) {
+            parse_float32(beat_threshold_it->second.value, anim_config.matrix_beat_threshold);
+        }
+
         // Future: Parse generic parameters here
 
         result.config.animations.push_back(anim_config);

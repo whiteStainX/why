@@ -52,7 +52,7 @@ trigger_cooldown_s = 1.0 # Increased cooldown
 type_speed_words_per_s = 15.0
 display_duration_s = 1.0 # Longer display duration
 fade_duration_s = 1.0 # Longer fade duration
-max_active_lines = 7 # Fewer active lines for better centering
+max_active_lines = 3 # Fewer active lines for better centering
 
 [[animations]]
 type = "BarVisual"
@@ -65,3 +65,16 @@ plane_y = 0
 plane_x = 0
 plane_rows = 10
 plane_cols = 100
+
+[[animations]]
+type = "AsciiMatrix"
+z_index = 2
+initially_active = true
+glyphs_file_path = "assets/ascii_matrix.txt"
+matrix_rows = 12
+matrix_cols = 40
+matrix_show_border = true
+matrix_beat_boost = 2.0
+matrix_beat_threshold = 0.55
+plane_y = 5
+plane_x = 10

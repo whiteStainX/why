@@ -509,6 +509,38 @@ ConfigLoadResult load_app_config(const std::string& path) {
             parse_int32(max_lines_it->second.value, anim_config.max_active_lines);
         }
 
+        const auto plane_y_it = raw_anim_config.find("plane_y");
+        if (plane_y_it != raw_anim_config.end()) {
+            int value = 0;
+            if (parse_int32(plane_y_it->second.value, value)) {
+                anim_config.plane_y = value;
+            }
+        }
+
+        const auto plane_x_it = raw_anim_config.find("plane_x");
+        if (plane_x_it != raw_anim_config.end()) {
+            int value = 0;
+            if (parse_int32(plane_x_it->second.value, value)) {
+                anim_config.plane_x = value;
+            }
+        }
+
+        const auto plane_rows_it = raw_anim_config.find("plane_rows");
+        if (plane_rows_it != raw_anim_config.end()) {
+            int value = 0;
+            if (parse_int32(plane_rows_it->second.value, value)) {
+                anim_config.plane_rows = value;
+            }
+        }
+
+        const auto plane_cols_it = raw_anim_config.find("plane_cols");
+        if (plane_cols_it != raw_anim_config.end()) {
+            int value = 0;
+            if (parse_int32(plane_cols_it->second.value, value)) {
+                anim_config.plane_cols = value;
+            }
+        }
+
         // Future: Parse generic parameters here
 
         result.config.animations.push_back(anim_config);

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -77,6 +78,10 @@ struct AnimationConfig {
     float fade_duration_s = 1.0f;        // Fade-out duration once display time elapses
     float trigger_cooldown_s = 0.75f;    // Minimum time between spawning new lines
     int max_active_lines = 4;            // Maximum number of simultaneous lines
+    std::optional<int> plane_y;          // Optional plane origin Y for visuals that use dedicated planes
+    std::optional<int> plane_x;          // Optional plane origin X for visuals that use dedicated planes
+    std::optional<int> plane_rows;       // Optional plane height override
+    std::optional<int> plane_cols;       // Optional plane width override
     // Add more generic parameters as needed, e.g., std::map<std::string, std::string> params;
 };
 

@@ -25,6 +25,9 @@ constexpr int kDefaultDropLengthMax = 9;
 constexpr float kDefaultDropSpeedMin = 10.0f;
 constexpr float kDefaultDropSpeedMax = 22.0f;
 constexpr float kDefaultActivationSmoothing = 0.12f;
+constexpr float kDefaultRainAngleDegrees = 0.0f;
+constexpr float kMaxRainAngleDegrees = 80.0f;
+constexpr float kDegreesToRadians = 3.14159265358979323846f / 180.0f;
 
 std::vector<std::string> parse_glyphs(const std::string& source) {
     std::vector<std::string> glyphs;
@@ -96,6 +99,8 @@ void CyberRainAnimation::init(notcurses* nc, const AppConfig& config) {
     drop_speed_min_rows_per_s_ = kDefaultDropSpeedMin;
     drop_speed_max_rows_per_s_ = kDefaultDropSpeedMax;
     activation_smoothing_s_ = kDefaultActivationSmoothing;
+    rain_angle_degrees_ = kDefaultRainAngleDegrees;
+    horizontal_slope_ = std::tan(rain_angle_degrees_ * kDegreesToRadians);
 
     plane_rows_ = 0;
     plane_cols_ = 0;
@@ -139,6 +144,10 @@ void CyberRainAnimation::init(notcurses* nc, const AppConfig& config) {
             if (anim_config.trigger_cooldown_s > 0.0f) {
                 scan_speed_boost_cols_per_s_ = anim_config.trigger_cooldown_s * 10.0f;
             }
+            const float clamped_angle = std::clamp(anim_config.rain_angle_degrees,
+                                                  -kMaxRainAngleDegrees,
+                                                  kMaxRainAngleDegrees);
+            rain_angle_degrees_ = clamped_angle;
             if (anim_config.plane_y) {
                 desired_y = *anim_config.plane_y;
             }
@@ -160,6 +169,8 @@ void CyberRainAnimation::init(notcurses* nc, const AppConfig& config) {
             break;
         }
     }
+
+    horizontal_slope_ = std::tan(rain_angle_degrees_ * kDegreesToRadians);
 
     if (!load_glyphs_from_file(glyphs_file_path_)) {
         if (glyphs_file_path_ != kDefaultGlyphFilePath) {
@@ -391,8 +402,11 @@ void CyberRainAnimation::refresh_dimensions() {
             scan_position_ = 0.0f;
         }
         for (auto& drop : active_drops_) {
-            if (drop.column >= static_cast<int>(plane_cols_)) {
-                drop.column = plane_cols_ > 0u ? static_cast<int>(plane_cols_) - 1 : 0;
+            if (plane_cols_ > 0u) {
+                const float max_col = static_cast<float>(plane_cols_ - 1);
+                drop.head_column = std::clamp(drop.head_column, 0.0f, max_col);
+            } else {
+                drop.head_column = 0.0f;
             }
         }
     }
@@ -446,9 +460,10 @@ void CyberRainAnimation::spawn_rain_column(int column, float activation, float d
 
     for (int i = 0; i < spawn_count; ++i) {
         ActiveDrop drop;
-        drop.column = column;
+        drop.head_column = static_cast<float>(column);
         drop.length = std::max(1, length_dist(rng_));
         drop.speed_rows_per_s = speed_dist(rng_);
+        drop.horizontal_speed_cols_per_s = drop.speed_rows_per_s * horizontal_slope_;
         drop.strength = std::clamp(0.6f + 0.4f * activation + 0.2f * unit_dist_(rng_), 0.0f, 1.0f);
         drop.head_row = -static_cast<float>(drop.length) * unit_dist_(rng_);
         if (!glyphs_.empty()) {
@@ -469,8 +484,11 @@ void CyberRainAnimation::update_drops(float delta_time) {
         return;
     }
 
+    const float slope = horizontal_slope_;
+
     for (auto& drop : active_drops_) {
         drop.head_row += drop.speed_rows_per_s * delta_time;
+        drop.head_column += drop.horizontal_speed_cols_per_s * delta_time;
         const int head_index = static_cast<int>(std::floor(drop.head_row));
         const int tail_index = head_index - drop.length + 1;
 
@@ -484,7 +502,14 @@ void CyberRainAnimation::update_drops(float delta_time) {
             relative = std::clamp(relative, 0.0f, 1.0f);
             const float intensity = std::clamp(drop.strength * relative, 0.0f, 1.0f);
 
-            const std::size_t index = static_cast<std::size_t>(row) * plane_cols_ + static_cast<unsigned int>(drop.column);
+            const float column_position = drop.head_column - slope * offset;
+            const int column_index = static_cast<int>(std::lround(column_position));
+            if (column_index < 0 || column_index >= static_cast<int>(plane_cols_)) {
+                continue;
+            }
+
+            const std::size_t index = static_cast<std::size_t>(row) * plane_cols_
+                                      + static_cast<unsigned int>(column_index);
             if (index >= cells_.size()) {
                 continue;
             }
@@ -503,11 +528,23 @@ void CyberRainAnimation::remove_finished_drops() {
         return;
     }
 
-    const float limit = static_cast<float>(plane_rows_);
+    const float row_limit = static_cast<float>(plane_rows_);
+    const float col_limit = static_cast<float>(plane_cols_);
+    const float slope = horizontal_slope_;
     active_drops_.erase(std::remove_if(active_drops_.begin(),
                                        active_drops_.end(),
                                        [&](const ActiveDrop& drop) {
-                                           return drop.head_row - drop.length >= limit;
+                                           const bool past_bottom = drop.head_row - drop.length >= row_limit;
+                                           if (plane_cols_ == 0u) {
+                                               return past_bottom;
+                                           }
+                                           const float head_col = drop.head_column;
+                                           const float tail_col = drop.head_column - slope * static_cast<float>(drop.length - 1);
+                                           const float min_col = std::min(head_col, tail_col);
+                                           const float max_col = std::max(head_col, tail_col);
+                                           const bool off_left = max_col < 0.0f;
+                                           const bool off_right = min_col >= col_limit;
+                                           return past_bottom || off_left || off_right;
                                        }),
                         active_drops_.end());
 }

@@ -88,6 +88,7 @@ struct AnimationConfig {
     std::string glyphs_file_path;        // Glyph file override for glyph-based animations
     float matrix_beat_boost = 1.5f;      // Beat multiplier for matrix animations
     float matrix_beat_threshold = 0.6f;  // Beat threshold for matrix animations
+    float rain_angle_degrees = 0.0f;     // Angle for cyber rain drops (degrees, relative to vertical)
     // Add more generic parameters as needed, e.g., std::map<std::string, std::string> params;
 };
 

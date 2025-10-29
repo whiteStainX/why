@@ -577,6 +577,11 @@ ConfigLoadResult load_app_config(const std::string& path) {
             parse_float32(beat_threshold_it->second.value, anim_config.matrix_beat_threshold);
         }
 
+        const auto rain_angle_it = raw_anim_config.find("rain_angle_degrees");
+        if (rain_angle_it != raw_anim_config.end()) {
+            parse_float32(rain_angle_it->second.value, anim_config.rain_angle_degrees);
+        }
+
         // Future: Parse generic parameters here
 
         result.config.animations.push_back(anim_config);

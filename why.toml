@@ -92,3 +92,4 @@ display_duration_s = 0.75 # Persistence duration for the rain trails
 fade_duration_s = 1.1
 plane_y = 0
 plane_x = 0
+rain_angle_degrees = 15.0

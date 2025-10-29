@@ -35,9 +35,10 @@ private:
     };
 
     struct ActiveDrop {
-        int column = 0;
         float head_row = 0.0f;
+        float head_column = 0.0f;
         float speed_rows_per_s = 0.0f;
+        float horizontal_speed_cols_per_s = 0.0f;
         int length = 0;
         float strength = 0.0f;
         std::string glyph;
@@ -88,6 +89,9 @@ private:
     float drop_speed_max_rows_per_s_ = 22.0f;
 
     float drop_spawn_accumulator_ = 0.0f;
+
+    float rain_angle_degrees_ = 0.0f;
+    float horizontal_slope_ = 0.0f;
 
     std::mt19937 rng_;
     std::uniform_real_distribution<float> unit_dist_;

@@ -85,7 +85,7 @@ void RandomTextAnimation::deactivate() {
     if (plane_) {
         ncplane_erase(plane_); // Clear the plane when deactivated
     }
-    active_lines_.clear();
+    // active_lines_.clear(); // Do not clear immediately, let them fade out
     condition_previously_met_ = false;
 }
 
@@ -93,25 +93,32 @@ void RandomTextAnimation::update(float delta_time,
                                  const AudioMetrics& metrics,
                                  const std::vector<float>& bands,
                                  float beat_strength) {
-    if (!plane_ || !is_active_) return;
+    if (!plane_) return;
 
     (void)metrics;
 
     time_since_last_trigger_ += delta_time;
 
-    float audio_value = beat_strength;
-    if (trigger_band_index_ >= 0 && trigger_band_index_ < static_cast<int>(bands.size())) {
-        audio_value = bands[static_cast<std::size_t>(trigger_band_index_)];
+    // Only attempt to spawn new lines if the animation is currently active
+    if (is_active_) {
+        float audio_value = beat_strength;
+        if (trigger_band_index_ >= 0 && trigger_band_index_ < static_cast<int>(bands.size())) {
+            audio_value = bands[static_cast<std::size_t>(trigger_band_index_)];
+        }
+
+        const bool beat_in_range = beat_strength >= trigger_beat_min_ && beat_strength <= trigger_beat_max_;
+        const bool condition_met = beat_in_range && audio_value >= trigger_threshold_;
+        if (condition_met && !condition_previously_met_ && time_since_last_trigger_ >= trigger_cooldown_s_) {
+            spawn_line();
+            time_since_last_trigger_ = 0.0f;
+        }
+        condition_previously_met_ = condition_met;
+    } else {
+        // If not active, reset condition_previously_met_ so it can trigger again when reactivated
+        condition_previously_met_ = false;
     }
 
-    const bool beat_in_range = beat_strength >= trigger_beat_min_ && beat_strength <= trigger_beat_max_;
-    const bool condition_met = beat_in_range && audio_value >= trigger_threshold_;
-    if (condition_met && !condition_previously_met_ && time_since_last_trigger_ >= trigger_cooldown_s_) {
-        spawn_line();
-        time_since_last_trigger_ = 0.0f;
-    }
-    condition_previously_met_ = condition_met;
-
+    // Always update existing lines, regardless of whether the animation is currently spawning new ones
     for (auto& line : active_lines_) {
         if (!line.completed) {
             if (line.char_interval <= 0.0f || type_speed_words_per_s_ <= 0.0f) {

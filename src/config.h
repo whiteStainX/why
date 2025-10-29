@@ -94,6 +94,20 @@ struct AnimationConfig {
     int wave_tail_length_cols = 6;       // Number of trailing columns for fading tail
     bool wave_alternate_direction = true; // Alternate sweep direction on each activation
     bool wave_direction_right = true;     // Initial sweep direction when not alternating
+    int breathe_points = 64;              // Number of vertices for the breathing shape
+    float breathe_min_radius = 6.0f;      // Minimum radius for the breathing circle
+    float breathe_max_radius = 14.0f;     // Maximum radius for the breathing circle
+    float breathe_audio_radius_influence = 10.0f; // Radius increase based on audio energy
+    float breathe_smoothing_s = 0.18f;    // Audio smoothing constant for breathing animation
+    float breathe_noise_amount = 0.3f;    // Amount of irregular jitter to apply to the outline
+    float breathe_rotation_speed = 0.35f; // Rotation speed (radians per second)
+    float breathe_vertical_scale = 0.55f; // Vertical scale correction for terminal aspect ratio
+    float breathe_base_pulse_hz = 0.35f;  // Base breathing frequency in Hz
+    float breathe_audio_pulse_weight = 0.65f; // How much audio energy speeds up the pulse
+    int breathe_band_index = -1;          // Optional FFT band to prioritise
+    float breathe_rms_weight = 1.0f;      // Weight applied to RMS audio energy
+    float breathe_beat_weight = 0.6f;     // Weight applied to beat strength
+    float breathe_band_weight = 0.5f;     // Weight applied to the selected FFT band
     // Add more generic parameters as needed, e.g., std::map<std::string, std::string> params;
 };
 

@@ -29,3 +29,6 @@ compile_commands.json
 
 # system config files
 /.vscode
+
+# assets
+/assets/*

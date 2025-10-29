@@ -316,7 +316,10 @@ void AsciiMatrixAnimation::ensure_dimensions_fit() {
     matrix_rows_ = std::clamp(configured_matrix_rows_, 1, available_rows);
     matrix_cols_ = std::clamp(configured_matrix_cols_, 1, available_cols);
 
-    cell_values_.assign(static_cast<std::size_t>(matrix_rows_) * static_cast<std::size_t>(matrix_cols_), 0.0f);
+    const std::size_t desired_cells = static_cast<std::size_t>(matrix_rows_) * static_cast<std::size_t>(matrix_cols_);
+    if (cell_values_.size() != desired_cells) {
+        cell_values_.assign(desired_cells, 0.0f);
+    }
 }
 
 void AsciiMatrixAnimation::draw_border() {

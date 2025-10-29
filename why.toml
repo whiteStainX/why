@@ -76,5 +76,5 @@ matrix_cols = 40
 matrix_show_border = true
 matrix_beat_boost = 2.0
 matrix_beat_threshold = 0.55
-plane_y = 5
+plane_y = 40
 plane_x = 10

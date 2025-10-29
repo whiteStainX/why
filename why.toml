@@ -62,7 +62,7 @@ trigger_band_index = 0 # Trigger on the first frequency band
 trigger_threshold = 0.001 # Activate when energy in band 0 is above 0.001
 text_file_path = "assets/bar.txt"
 plane_y = 0
-plane_x = 0
+plane_x = 10
 plane_rows = 10
 plane_cols = 100
 
@@ -92,4 +92,22 @@ display_duration_s = 0.75 # Persistence duration for the rain trails
 fade_duration_s = 1.1
 plane_y = 0
 plane_x = 0
-rain_angle_degrees = 15.0
+rain_angle_degrees = 25.0
+
+[[animations]]
+type = "LightningWave"
+z_index = 3
+initially_active = false
+trigger_band_index = 25 # Focus on upper-mid frequencies for lightning riff detection
+trigger_threshold = 0.001
+glyphs_file_path = "assets/lightning_wave.txt"
+display_duration_s = 0.8
+fade_duration_s = 1.4
+wave_speed_cols_per_s = 48.0
+wave_front_width_cols = 3
+wave_tail_length_cols = 8
+wave_alternate_direction = true
+wave_direction_right = true
+trigger_cooldown_s = 0.2
+plane_y = 0
+plane_x = 0

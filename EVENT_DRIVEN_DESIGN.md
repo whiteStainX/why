@@ -1,167 +1,94 @@
-# Event-Driven Architecture for Animation Handling
+# Event-Driven Architecture
 
-This document outlines a proposed architectural improvement for the `why` audio visualizer, transitioning the animation system from a polling-based model to an event-driven one. This change will significantly improve efficiency, flexibility, and code modularity.
-
-## 1. Current Architecture: Polling
-
-In the current system, a central `AnimationManager` holds a list of all animations. On every frame, it iterates through this entire list and checks a set of hard-coded trigger conditions (like beat strength or band energy) for each animation to decide if it should be active.
-
-### AS-IS Diagram
-
-```
-+-----------+   passes   +----------------+   calls    +--------------------+   iterates & checks   +-----------------+
-| Main Loop |----------->|  render_frame  |----------->| AnimationManager   |---------------------->| Animation 1     |
-+-----------+   data     +----------------+            | (update_all)       |                       | (is beat > 0.5?)|
-                                                       +--------------------+                       +-----------------+
-                                                               |
-                                                               | iterates & checks   +-----------------+
-                                                               +-------------------->| Animation 2     |
-                                                               |                     | (is band[3] > 0.8?)|
-                                                               |                     +-----------------+
-                                                               |
-                                                               | iterates & checks   +-----------------+
-                                                               +-------------------->| Animation N     |
-                                                                                     | (is beat > 0.2?)|
-                                                                                     +-----------------+
-```
-
-### Weaknesses of the Polling Model
-
-*   **Inefficient:** The trigger conditions for *every* animation are checked on *every* frame, even if no relevant audio event has occurred.
-*   **Tightly Coupled:** The `AnimationManager` must know the specific trigger logic for every type of animation. Adding a new animation or a new trigger type requires modifying this central manager.
-*   **Not Scalable:** As more animations are added, the iteration and checking process in the main loop becomes increasingly burdensome.
+This document describes the event-driven architecture of the `why` audio visualizer's animation system. This design improves efficiency, promotes strong decoupling between components, and enhances flexibility.
 
 ---
 
-## 2. Proposed Architecture: Event-Driven
+## 1. System Overview
 
-The proposed design introduces an **Event Bus** that decouples components. Instead of a central manager checking on everyone, components "emit" events, and other components "subscribe" to the events they care about.
+Instead of a centralized manager polling every animation for state changes, the system is built around an **Event Bus**. Components are decoupled into three main roles:
 
-### Key Components
+*   **Emitters (Publishers):** Components that generate data and publish it to the Event Bus as a named event. They have no knowledge of who, if anyone, is listening.
+*   **Event Bus (Dispatcher):** A central hub that receives all published events and forwards them to any subscribers registered for that specific event type.
+*   **Subscribers (Listeners):** Components (primarily animations) that subscribe to the specific events they care about. They execute their logic only when they receive a relevant event.
 
-*   **Events:** Simple data structures that represent something that has happened (e.g., a beat was detected).
-*   **Emitters (Publishers):** Components that create and publish events to the Event Bus. For example, the `DspEngine` would publish a `BeatDetected` event.
-*   **Event Bus (Dispatcher):** A central hub that receives events from emitters and dispatches them to any subscribers. It doesn't know what the events mean.
-*   **Subscribers (Listeners):** Components that register with the Event Bus to be notified of specific events. Animations will be subscribers.
-
-### TO-BE Diagram
+### Architecture Diagram
 
 ```
-                                     +--------------------+
-                                     | Animation 1        |
-                                     | (Subscribes to     |
-+-----------+       publishes        |  BeatDetected)     |
-| DspEngine |--------------------->  +--------------------+
-| (Emitter) |       BeatDetected     |                    |
-+-----------+                        |                    |
-                                     |     Event Bus      |
-+-----------+       publishes        |                    |
-| Main Loop |--------------------->  |                    |
-| (Emitter) |       FrameUpdate      |                    |
-+-----------+                        +--------------------+-----> notifies
-                                     | Animation 2        |
-                                     | (Subscribes to     |
-                                     |  FrameUpdate)      |
-                                     +--------------------+
-
-                                     +--------------------+
-                                     | Animation N        |
-                                     | (Subscribes to     |
-                                     |  Beat, UserInput)  |
-                                     +--------------------+
++-----------+      publishes       +--------------------+      notifies      +--------------------+
+| DspEngine |--------------------->|                    |------------------->| Animation 1        |
+| (Emitter) |   BeatDetectedEvent  |                    |                    | (Subscribes to Beat)|
++-----------+                      |                    |                    +--------------------+
+                                   |     Event Bus      |
+                                   |                    |                    +--------------------+
++------------------+   publishes   |                    |      notifies      | Animation 2        |
+| AnimationManager |-------------->|                    |------------------->| (Subscribes to     |
+| (Emitter)        | FrameUpdateEvent |                    |                    |  FrameUpdate)      |
++------------------+               +--------------------+                    +--------------------+
 ```
 
-### Advantages of the Event-Driven Model
+### Key Advantages
 
-*   **Efficient:** Code is only executed when a relevant event occurs.
-*   **Decoupled:** Emitters and subscribers don't know about each other. The `DspEngine` doesn't know what animations exist, and animations don't know where the beat events come from.
-*   **Flexible & Extensible:** New animations can be added without modifying any central manager. They simply subscribe to the events they need. New event types (e.g., user input) can be added just as easily.
+*   **Efficiency:** An animation's code is only executed when an event it has subscribed to occurs. An animation that only reacts to strong beats will consume no resources on frames where no beat is detected.
+*   **Decoupling:** Emitters and subscribers are completely independent. The `DspEngine` doesn't know what animations exist, and animations don't know where the audio data comes from.
+*   **Extensibility:** New animations can be added without modifying any central manager. They simply subscribe to the events they need. New event types can also be added without affecting existing components.
 
 ---
 
-## 3. Event Flow Example: Beat Detection
+## 2. Core Components & Event Flow
 
-1.  The `DspEngine` processes an audio buffer and detects a beat.
-2.  It creates a `BeatDetectedEvent` object containing the beat's strength.
-3.  It publishes this event to the global `EventBus`.
-4.  The `EventBus` looks at its list of subscribers for the `BeatDetectedEvent`.
-5.  It finds that `LightningWaveAnimation` and `AsciiMatrixAnimation` have subscribed.
-6.  It calls the `onEvent(event)` method for each of those animations, passing them the `BeatDetectedEvent` data.
-7.  The animations use this data to activate themselves or trigger a visual effect.
-8.  Animations that didn't subscribe (e.g., a smoothly scrolling background) are not affected and their code is not executed.
+### Emitters
+*   **`AnimationManager` (in the main loop):** This is the primary emitter. On every frame, it publishes:
+    1.  `BeatDetectedEvent`: Contains the current beat strength.
+    2.  `FrameUpdateEvent`: A larger event containing `delta_time`, `AudioMetrics`, and the full vector of FFT band data.
+
+### Event Flow Example: A Beat-Triggered Animation
+
+1.  The `main` loop gets the latest beat strength from the `DspEngine`.
+2.  It calls `animation_manager.update_all()`, passing in the data.
+3.  The `AnimationManager` publishes a `BeatDetectedEvent` to the `EventBus`.
+4.  The `EventBus` checks its list of subscribers for this event type.
+5.  It finds that `LightningWaveAnimation` has subscribed to it.
+6.  It invokes the handler function provided by `LightningWaveAnimation`, which then runs its activation logic.
+7.  Other animations that did not subscribe are not affected and their code is not executed.
 
 ---
 
-## 4. C++ Implementation Sketch
+## 3. Implementation for Developers
 
-Here is a simplified example of how the Event Bus and a subscribing animation could be implemented.
+The key to integrating a new animation into this system is the `bind_events` method, which is part of the `Animation` interface.
 
-#### EventBus.h
+### `Animation::bind_events`
+
+This virtual method is called once when your animation is loaded. Its purpose is to subscribe your animation to all the events it needs to function.
+
+#### The Easy Way: Standard Triggers
+
+For animations that use the common beat/band trigger conditions from `why.toml`, a helper function is provided.
+
 ```cpp
-#pragma once
+// In MyAnimation.cpp
+#include "animation_event_utils.h"
 
-#include <functional>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-
-// Base event struct
-struct Event {
-    virtual ~Event() = default;
-};
-
-// Example of a specific event
-struct BeatDetectedEvent : public Event {
-    float strength;
-};
-
-using Subscriber = std::function<void(const Event&)>;
-
-class EventBus {
-public:
-    // Subscribe to a specific event type
-    template<typename T>
-    void subscribe(Subscriber subscriber) {
-        subscribers_[typeid(T).name()].push_back(subscriber);
-    }
-
-    // Publish an event to all relevant subscribers
-    void publish(const Event& event) {
-        const char* type_name = typeid(event).name();
-        if (subscribers_.count(type_name)) {
-            for (const auto& subscriber : subscribers_.at(type_name)) {
-                subscriber(event);
-            }
-        }
-    }
-
-private:
-    std::map<std::string, std::vector<Subscriber>> subscribers_;
-};
+void MyAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
+    // This one line handles activation, deactivation, and calls update() for you.
+    bind_standard_frame_updates(this, config, bus);
+}
 ```
 
-#### LightningWaveAnimation.h
+#### The Advanced Way: Custom Subscriptions
+
+For more efficient or unique animations, you can subscribe to events directly. This gives you precise control.
+
 ```cpp
-#include "Animation.h"
-#include "EventBus.h"
-
-class LightningWaveAnimation : public Animation {
-public:
-    LightningWaveAnimation(EventBus& event_bus) {
-        // Subscribe to the BeatDetectedEvent
-        event_bus.subscribe<BeatDetectedEvent>([this](const Event& event) {
-            this->onBeat(static_cast<const BeatDetectedEvent&>(event));
-        });
-    }
-
-    void onBeat(const BeatDetectedEvent& event) {
-        if (event.strength > trigger_threshold_) {
-            // Activate the lightning effect
-            activate();
+// For an animation that only flashes on a beat.
+void MyFlashAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
+    // Subscribe ONLY to the beat event.
+    bus.subscribe<events::BeatDetectedEvent>([this, config](const events::BeatDetectedEvent& event) {
+        if (event.strength > config.trigger_threshold) {
+            this->do_flash_effect();
         }
-    }
-
-    // ... other animation methods (update, render)
-};
+    });
+    // This animation is now highly efficient, as its code only runs when a beat occurs.
+}
 ```

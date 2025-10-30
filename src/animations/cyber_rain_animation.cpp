@@ -1,4 +1,5 @@
 #include "cyber_rain_animation.h"
+#include "animation_event_utils.h"
 
 #include <algorithm>
 #include <chrono>
@@ -588,6 +589,10 @@ bool CyberRainAnimation::has_visible_cells() const {
         }
     }
     return false;
+}
+
+void CyberRainAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
+    bind_standard_frame_updates(this, config, bus);
 }
 
 } // namespace animations

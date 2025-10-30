@@ -1,4 +1,5 @@
 #include "bar_visual_animation.h"
+#include "animation_event_utils.h"
 
 #include <algorithm>
 #include <cmath>
@@ -284,6 +285,10 @@ bool BarVisualAnimation::load_glyphs_from_file(const std::string& path) {
 
     glyphs_ = std::move(parsed);
     return true;
+}
+
+void BarVisualAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
+    bind_standard_frame_updates(this, config, bus);
 }
 } // namespace animations
 } // namespace why

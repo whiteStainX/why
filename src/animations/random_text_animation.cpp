@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include "random_text_animation.h"
+#include "animation_event_utils.h"
 
 namespace why {
 namespace animations {
@@ -347,6 +348,10 @@ float RandomTextAnimation::compute_char_interval(const std::string& text) const 
     }
 
     return 1.0f / chars_per_second;
+}
+
+void RandomTextAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
+    bind_standard_frame_updates(this, config, bus);
 }
 
 } // namespace animations

@@ -1,4 +1,5 @@
 #include "breathe_animation.h"
+#include "animation_event_utils.h"
 
 #include <algorithm>
 #include <cmath>
@@ -516,6 +517,10 @@ void BreatheAnimation::deactivate() {
         ncplane_erase(plane_);
     }
     std::fill(cell_intensities_.begin(), cell_intensities_.end(), 0.0f);
+}
+
+void BreatheAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
+    bind_standard_frame_updates(this, config, bus);
 }
 
 } // namespace animations

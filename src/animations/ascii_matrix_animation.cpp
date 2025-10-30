@@ -1,4 +1,5 @@
 #include "ascii_matrix_animation.h"
+#include "animation_event_utils.h"
 
 #include <algorithm>
 #include <cmath>
@@ -395,6 +396,10 @@ void AsciiMatrixAnimation::draw_matrix() {
                               glyph.c_str());
         }
     }
+}
+
+void AsciiMatrixAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
+    bind_standard_frame_updates(this, config, bus);
 }
 
 } // namespace animations

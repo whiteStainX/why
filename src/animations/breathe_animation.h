@@ -28,6 +28,8 @@ public:
     int get_z_index() const override { return z_index_; }
     ncplane* get_plane() const override { return plane_; }
 
+    void bind_events(const AnimationConfig& config, events::EventBus& bus) override;
+
 private:
     void configure_from_app(const AppConfig& config);
     void create_plane(notcurses* nc);

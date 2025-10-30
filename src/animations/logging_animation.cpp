@@ -1,4 +1,5 @@
 #include "logging_animation.h"
+#include "animation_event_utils.h"
 
 #include <algorithm>
 #include <cctype>
@@ -654,6 +655,10 @@ void LoggingAnimation::deactivate() {
         ncplane_erase(plane_);
     }
     needs_redraw_ = false;
+}
+
+void LoggingAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
+    bind_standard_frame_updates(this, config, bus);
 }
 
 } // namespace animations

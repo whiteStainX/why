@@ -13,3 +13,9 @@
 [debug] why::visual - applied beat accent palette boost=1.4x
 [info] why::metrics - frame=256 fps=59.8 latency=7.6ms
 [info] why::runtime - heartbeat ok, backlog=0
+[audio_active][info] why::audio - capture pipeline engaged (input stream active)
+[audio_inactive][warn] why::audio - signal path idle, monitoring for activity
+[beat>0.75][debug] why::visual - beat spike exceeded 0.75, accentuating palette
+[rms>0.08][trace] why::audio - sustained rms above 0.08, adaptive gain applied
+[peak>0.90][warn][once] why::audio - limiter clamped a transient peak (safety engaged)
+[dropped>0][error] why::audio - buffer underrun detected, consider increasing ring size

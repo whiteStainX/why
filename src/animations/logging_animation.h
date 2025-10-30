@@ -73,6 +73,9 @@ private:
     bool evaluate_conditions(const MessageEntry& entry,
                              const AudioMetrics& metrics,
                              float beat_strength);
+    void handle_beat_event(float strength);
+    void handle_audio_activity_change(const AudioMetrics& metrics);
+    void check_peak_progression(const AudioMetrics& metrics);
     std::vector<std::string> wrap_text(const std::string& text, int width) const;
     int estimate_line_usage(const std::string& text, int width) const;
     void redraw();
@@ -110,6 +113,15 @@ private:
 
     std::string messages_file_path_;
     std::string title_;
+
+    float beat_log_cooldown_s_ = 0.15f;
+    float time_since_last_beat_log_event_ = 0.0f;
+    bool has_latest_metrics_ = false;
+    bool last_audio_active_state_ = false;
+    bool audio_state_initialized_ = false;
+    AudioMetrics latest_metrics_{};
+    float next_peak_report_threshold_ = 0.2f;
+    float highest_peak_observed_ = 0.0f;
 };
 
 } // namespace animations

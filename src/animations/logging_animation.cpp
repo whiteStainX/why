@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <fstream>
 #include <optional>
+#include <iomanip>
+#include <sstream>
 
 namespace why {
 namespace animations {
@@ -59,6 +61,12 @@ bool parse_float(const std::string& text, float& out_value) {
     }
     out_value = value;
     return true;
+}
+
+std::string format_float(float value, int precision = 2) {
+    std::ostringstream stream;
+    stream << std::fixed << std::setprecision(precision) << value;
+    return stream.str();
 }
 
 } // namespace
@@ -197,6 +205,14 @@ void LoggingAnimation::init(notcurses* nc, const AppConfig& config) {
     if (messages_file_path_.empty()) {
         messages_file_path_ = "assets/logging_animation.txt";
     }
+
+    time_since_last_beat_log_event_ = beat_log_cooldown_s_;
+    has_latest_metrics_ = false;
+    audio_state_initialized_ = false;
+    last_audio_active_state_ = false;
+    next_peak_report_threshold_ = 0.2f;
+    highest_peak_observed_ = 0.0f;
+    latest_metrics_ = {};
 
     ensure_plane(nc);
     load_messages();
@@ -464,6 +480,72 @@ bool LoggingAnimation::evaluate_conditions(const MessageEntry& entry,
     return true;
 }
 
+void LoggingAnimation::handle_beat_event(float strength) {
+    if (!is_active_ || !has_latest_metrics_) {
+        return;
+    }
+
+    if (time_since_last_beat_log_event_ < beat_log_cooldown_s_) {
+        return;
+    }
+
+    time_since_last_beat_log_event_ = 0.0f;
+
+    std::ostringstream stream;
+    stream << "[beat] pulse registered strength=" << format_float(strength, 2)
+           << " :: rms=" << format_float(latest_metrics_.rms, 3)
+           << " peak=" << format_float(latest_metrics_.peak, 3);
+    append_log_entry(stream.str());
+}
+
+void LoggingAnimation::handle_audio_activity_change(const AudioMetrics& metrics) {
+    if (!audio_state_initialized_ || metrics.active != last_audio_active_state_) {
+        audio_state_initialized_ = true;
+        last_audio_active_state_ = metrics.active;
+
+        std::ostringstream stream;
+        if (metrics.active) {
+            stream << "[status] capture conduit awakened :: rms="
+                   << format_float(metrics.rms, 3) << " peak="
+                   << format_float(metrics.peak, 3);
+            next_peak_report_threshold_ = 0.2f;
+            highest_peak_observed_ = metrics.peak;
+            time_since_last_beat_log_event_ = beat_log_cooldown_s_;
+        } else {
+            stream << "[status] silence veils the input :: dropped=" << metrics.dropped;
+            next_peak_report_threshold_ = 0.2f;
+            highest_peak_observed_ = 0.0f;
+            has_latest_metrics_ = false;
+        }
+
+        append_log_entry(stream.str());
+    }
+}
+
+void LoggingAnimation::check_peak_progression(const AudioMetrics& metrics) {
+    if (!metrics.active) {
+        return;
+    }
+
+    highest_peak_observed_ = std::max(highest_peak_observed_, metrics.peak);
+
+    if (metrics.peak < next_peak_report_threshold_) {
+        return;
+    }
+
+    std::ostringstream stream;
+    stream << "[signal] crest breached " << format_float(metrics.peak, 2)
+           << " :: rms=" << format_float(metrics.rms, 3);
+    append_log_entry(stream.str());
+
+    const float step = 0.1f;
+    float candidate = next_peak_report_threshold_ + step;
+    while (candidate <= metrics.peak) {
+        candidate += step;
+    }
+    next_peak_report_threshold_ = std::min(candidate, 0.95f);
+}
+
 std::vector<std::string> LoggingAnimation::wrap_text(const std::string& text, int width) const {
     std::vector<std::string> lines;
     if (width <= 0) {
@@ -503,6 +585,13 @@ void LoggingAnimation::update(float delta_time,
     if (!plane_ || !is_active_) {
         return;
     }
+
+    latest_metrics_ = metrics;
+    has_latest_metrics_ = true;
+    time_since_last_beat_log_event_ += delta_time;
+
+    handle_audio_activity_change(metrics);
+    check_peak_progression(metrics);
 
     process_conditional_messages(metrics, beat_strength);
 
@@ -640,6 +729,12 @@ void LoggingAnimation::activate() {
         append_next_line();
     }
     time_since_last_line_ = 0.0f;
+    time_since_last_beat_log_event_ = beat_log_cooldown_s_;
+    has_latest_metrics_ = false;
+    audio_state_initialized_ = false;
+    latest_metrics_ = {};
+    next_peak_report_threshold_ = 0.2f;
+    highest_peak_observed_ = 0.0f;
     needs_redraw_ = true;
 }
 
@@ -654,11 +749,15 @@ void LoggingAnimation::deactivate() {
     if (plane_) {
         ncplane_erase(plane_);
     }
+    has_latest_metrics_ = false;
+    audio_state_initialized_ = false;
     needs_redraw_ = false;
 }
 
 void LoggingAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
     bind_standard_frame_updates(this, config, bus);
+    bus.subscribe<events::BeatDetectedEvent>(
+        [this](const events::BeatDetectedEvent& event) { handle_beat_event(event.strength); });
 }
 
 } // namespace animations

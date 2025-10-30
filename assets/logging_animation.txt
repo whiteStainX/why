@@ -1,21 +1,21 @@
-[info] why::bootstrap - initializing runtime configuration
-[debug] why::audio - capture backend selected: pulse (48kHz @ 2ch)
-[info] why::dsp - fft size=1024 hop=256 bands=32 window=hann
-[debug] why::visual - registering animation pipeline (6 stages)
-[trace] why::audio - rms=0.012 peak=0.041 beat=0.08
-[warn]  why::plugins - optional plugin beat-flash-debug already loaded
-[info] why::metrics - frame=128 fps=60.1 latency=7.3ms
-[debug] why::visual - logging_animation queue depth=14/18
+[info] why::bootstrap - aligning ley lines for runtime flux calibration
+[debug] why::audio - capture conduit tuned to pulse (48kHz@2ch) :: wards stable
+[info] why::dsp - fft size=1024 hop=256 bands=32 :: harmonic lattice humming
+[debug] why::visual - forging animation pipeline (6 sigils in resonance)
+[trace] why::audio - rms=0.012 peak=0.041 beat=0.08 :: ether murmurs low
+[warn]  why::plugins - spectral familiar beat-flash-debug already bound
+[info] why::metrics - frame=128 fps=60.1 latency=7.3ms :: chronometer steady
+[debug] why::visual - logging_animation archive depth=14/18 :: secrets intact
 [info] why::runtime - soft reload of assets/logging_animation.txt completed
-[error] why::network - telemetry endpoint unreachable (timeout)
-[info] why::network - retry scheduled in 30s
-[trace] why::audio - rms=0.018 peak=0.056 beat=0.11
-[debug] why::visual - applied beat accent palette boost=1.4x
-[info] why::metrics - frame=256 fps=59.8 latency=7.6ms
-[info] why::runtime - heartbeat ok, backlog=0
-[audio_active][info] why::audio - capture pipeline engaged (input stream active)
-[audio_inactive][warn] why::audio - signal path idle, monitoring for activity
-[beat>0.75][debug] why::visual - beat spike exceeded 0.75, accentuating palette
-[rms>0.08][trace] why::audio - sustained rms above 0.08, adaptive gain applied
-[peak>0.90][warn][once] why::audio - limiter clamped a transient peak (safety engaged)
-[dropped>0][error] why::audio - buffer underrun detected, consider increasing ring size
+[error] why::network - telemetry beacon lost in mist (timeout)
+[info] why::network - retry ritual scheduled in 30s
+[trace] why::audio - rms=0.018 peak=0.056 beat=0.11 :: currents quicken
+[debug] why::visual - applied beat accent palette boost=1.4x :: colors ignite
+[info] why::metrics - frame=256 fps=59.8 latency=7.6ms :: gears still align
+[info] why::runtime - heartbeat affirmed, backlog=0 :: wards glowing
+[audio_active][info] why::audio - capture pipeline engaged :: stream awakens
+[audio_inactive][warn] why::audio - signal path dormant :: sentries keep watch
+[beat>0.75][debug] why::visual - beat spike pierced 0.75 :: palette sigil flares
+[rms>0.08][trace] why::audio - sustained rms above 0.08 :: gain spirits invoked
+[peak>0.90][warn][once] why::audio - limiter trapped a rogue transient (safety rune)
+[dropped>0][error] why::audio - buffer underrun omen detected :: enlarge the ring

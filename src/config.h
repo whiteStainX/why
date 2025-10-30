@@ -78,6 +78,8 @@ struct AnimationConfig {
     float fade_duration_s = 1.0f;        // Fade-out duration once display time elapses
     float trigger_cooldown_s = 0.75f;    // Minimum time between spawning new lines
     int max_active_lines = 4;            // Maximum number of simultaneous lines
+    float random_text_min_y_ratio = 0.0f; // Minimum vertical spawn ratio for random text lines
+    float random_text_max_y_ratio = 1.0f; // Maximum vertical spawn ratio for random text lines
     std::optional<int> plane_y;          // Optional plane origin Y for visuals that use dedicated planes
     std::optional<int> plane_x;          // Optional plane origin X for visuals that use dedicated planes
     std::optional<int> plane_rows;       // Optional plane height override

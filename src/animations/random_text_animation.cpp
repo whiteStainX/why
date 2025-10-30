@@ -1,6 +1,7 @@
 #include <notcurses/notcurses.h>
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <fstream>
 
 #include "random_text_animation.h"
@@ -64,6 +65,12 @@ void RandomTextAnimation::init(notcurses* nc, const AppConfig& config) {
             if (anim_config.max_active_lines > 0) {
                 max_active_lines_ = anim_config.max_active_lines;
             }
+
+            min_y_ratio_ = std::clamp(anim_config.random_text_min_y_ratio, 0.0f, 1.0f);
+            max_y_ratio_ = std::clamp(anim_config.random_text_max_y_ratio, 0.0f, 1.0f);
+            if (max_y_ratio_ < min_y_ratio_) {
+                std::swap(min_y_ratio_, max_y_ratio_);
+            }
             break;
         }
     }
@@ -78,13 +85,11 @@ void RandomTextAnimation::activate() {
         ncplane_set_bg_rgb8(plane_, 0, 0, 0);     // Black background
     }
     time_since_last_trigger_ = trigger_cooldown_s_;
-    condition_previously_met_ = false;
     plane_needs_clear_ = false;
 }
 
 void RandomTextAnimation::deactivate() {
     is_active_ = false;
-    condition_previously_met_ = false;
     if (active_lines_.empty() && plane_) {
         ncplane_erase(plane_);
         plane_needs_clear_ = false;
@@ -112,14 +117,21 @@ void RandomTextAnimation::update(float delta_time,
 
         const bool beat_in_range = beat_strength >= trigger_beat_min_ && beat_strength <= trigger_beat_max_;
         const bool condition_met = beat_in_range && audio_value >= trigger_threshold_;
-        if (condition_met && !condition_previously_met_ && time_since_last_trigger_ >= trigger_cooldown_s_) {
-            spawn_line();
-            time_since_last_trigger_ = 0.0f;
+        if (condition_met) {
+            if (trigger_cooldown_s_ <= 0.0f) {
+                spawn_line();
+                time_since_last_trigger_ = 0.0f;
+            } else if (time_since_last_trigger_ >= trigger_cooldown_s_) {
+                const int spawn_budget = std::max(1, static_cast<int>(time_since_last_trigger_ / trigger_cooldown_s_));
+                for (int i = 0; i < spawn_budget; ++i) {
+                    spawn_line();
+                    if (static_cast<int>(active_lines_.size()) >= max_active_lines_) {
+                        break;
+                    }
+                }
+                time_since_last_trigger_ = std::fmod(time_since_last_trigger_, trigger_cooldown_s_);
+            }
         }
-        condition_previously_met_ = condition_met;
-    } else {
-        // If not active, reset condition_previously_met_ so it can trigger again when reactivated
-        condition_previously_met_ = false;
     }
 
     // Always update existing lines, regardless of whether the animation is currently spawning new ones
@@ -278,7 +290,16 @@ void RandomTextAnimation::spawn_line() {
     ncplane_dim_yx(plane_, &plane_rows, &plane_cols);
 
     if (plane_rows > 0) {
-        std::uniform_int_distribution<int> y_dist(0, static_cast<int>(plane_rows) - 1);
+        const int max_row_index = static_cast<int>(plane_rows) - 1;
+        const float clamped_min_ratio = std::clamp(min_y_ratio_, 0.0f, 1.0f);
+        const float clamped_max_ratio = std::clamp(max_y_ratio_, 0.0f, 1.0f);
+        const int min_row = std::clamp(static_cast<int>(std::floor(clamped_min_ratio * static_cast<float>(max_row_index))),
+                                       0,
+                                       std::max(0, max_row_index));
+        const int max_row = std::clamp(static_cast<int>(std::ceil(clamped_max_ratio * static_cast<float>(max_row_index))),
+                                       min_row,
+                                       std::max(0, max_row_index));
+        std::uniform_int_distribution<int> y_dist(min_row, max_row);
         line.y_pos = y_dist(rng_);
     } else {
         line.y_pos = 0;

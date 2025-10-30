@@ -509,6 +509,16 @@ ConfigLoadResult load_app_config(const std::string& path) {
             parse_int32(max_lines_it->second.value, anim_config.max_active_lines);
         }
 
+        const auto min_y_ratio_it = raw_anim_config.find("random_text_min_y_ratio");
+        if (min_y_ratio_it != raw_anim_config.end()) {
+            parse_float32(min_y_ratio_it->second.value, anim_config.random_text_min_y_ratio);
+        }
+
+        const auto max_y_ratio_it = raw_anim_config.find("random_text_max_y_ratio");
+        if (max_y_ratio_it != raw_anim_config.end()) {
+            parse_float32(max_y_ratio_it->second.value, anim_config.random_text_max_y_ratio);
+        }
+
         const auto log_interval_it = raw_anim_config.find("log_line_interval_s");
         if (log_interval_it != raw_anim_config.end()) {
             parse_float32(log_interval_it->second.value, anim_config.log_line_interval_s);

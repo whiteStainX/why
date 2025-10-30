@@ -69,9 +69,10 @@ private:
     float fade_duration_s_ = 1.0f;
     float trigger_cooldown_s_ = 0.75f;
     int max_active_lines_ = 4;
+    float min_y_ratio_ = 0.0f;
+    float max_y_ratio_ = 1.0f;
     float time_since_last_trigger_ = 0.0f;
     std::string text_file_path_ = "assets/dune.txt";
-    bool condition_previously_met_ = false;
 };
 
 } // namespace animations

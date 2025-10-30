@@ -53,6 +53,8 @@ type_speed_words_per_s = 30.0
 display_duration_s = 1.0 # Longer display duration
 fade_duration_s = 1.0 # Longer fade duration
 max_active_lines = 3 # Fewer active lines for better centering
+random_text_min_y_ratio = 0.4
+random_text_max_y_ratio = 0.6
 
 [[animations]]
 type = "BarVisual"

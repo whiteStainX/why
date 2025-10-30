@@ -57,7 +57,7 @@ This document outlines the detailed steps to transform `RandomTextAnimation` int
     *   Once `current_word_index` reaches the end, `display_elapsed` starts.
     *   After `display_elapsed` exceeds `display_duration_s_`, `fading_out` flag is set, and `fade_elapsed` starts.
     *   Lines are removed from the active list when `fade_elapsed` exceeds `fade_duration_s_`.
-    *   `why.toml` includes new configuration options for `RandomTextAnimation` such as `type_speed_words_per_s`, `display_duration_s`, `fade_duration_s`.
+    *   `why.toml` includes new configuration options for `RandomTextAnimation` such as `type_speed_words_per_s`, `display_duration_s`, `fade_duration_s`, and spawn-band controls like `random_text_min_y_ratio` / `random_text_max_y_ratio`.
     *   Project builds successfully.
     *   Text appears word by word, persists, and then disappears.
 

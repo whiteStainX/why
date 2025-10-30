@@ -647,6 +647,40 @@ ConfigLoadResult load_app_config(const std::string& path) {
             parse_bool(wave_direction_it->second.value, anim_config.wave_direction_right);
         }
 
+        const auto lightning_novelty_threshold_it =
+            raw_anim_config.find("lightning_novelty_threshold");
+        if (lightning_novelty_threshold_it != raw_anim_config.end()) {
+            parse_float32(lightning_novelty_threshold_it->second.value,
+                           anim_config.lightning_novelty_threshold);
+        }
+
+        const auto lightning_energy_floor_it = raw_anim_config.find("lightning_energy_floor");
+        if (lightning_energy_floor_it != raw_anim_config.end()) {
+            parse_float32(lightning_energy_floor_it->second.value,
+                           anim_config.lightning_energy_floor);
+        }
+
+        const auto lightning_detection_cooldown_it =
+            raw_anim_config.find("lightning_detection_cooldown_s");
+        if (lightning_detection_cooldown_it != raw_anim_config.end()) {
+            parse_float32(lightning_detection_cooldown_it->second.value,
+                           anim_config.lightning_detection_cooldown_s);
+        }
+
+        const auto lightning_novelty_smoothing_it =
+            raw_anim_config.find("lightning_novelty_smoothing_s");
+        if (lightning_novelty_smoothing_it != raw_anim_config.end()) {
+            parse_float32(lightning_novelty_smoothing_it->second.value,
+                           anim_config.lightning_novelty_smoothing_s);
+        }
+
+        const auto lightning_activation_decay_it =
+            raw_anim_config.find("lightning_activation_decay_s");
+        if (lightning_activation_decay_it != raw_anim_config.end()) {
+            parse_float32(lightning_activation_decay_it->second.value,
+                           anim_config.lightning_activation_decay_s);
+        }
+
         const auto breathe_points_it = raw_anim_config.find("breathe_points");
         if (breathe_points_it != raw_anim_config.end()) {
             parse_int32(breathe_points_it->second.value, anim_config.breathe_points);

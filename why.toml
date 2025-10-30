@@ -80,6 +80,22 @@ plane_y = 20
 plane_x = 10
 
 [[animations]]
+type = "Logging"
+z_index = 2
+initially_active = true
+text_file_path = "assets/logging_animation.txt"
+plane_rows = 32
+plane_cols = 32
+plane_y = 4
+plane_x = 120
+log_line_interval_s = 0.5
+log_loop_messages = true
+log_show_border = true
+log_padding_y = 1
+log_padding_x = 2
+log_title = "why::log"
+
+[[animations]]
 type = "CyberRain"
 z_index = 0
 initially_active = true

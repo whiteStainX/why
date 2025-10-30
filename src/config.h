@@ -108,6 +108,12 @@ struct AnimationConfig {
     float breathe_rms_weight = 1.0f;      // Weight applied to RMS audio energy
     float breathe_beat_weight = 0.6f;     // Weight applied to beat strength
     float breathe_band_weight = 0.5f;     // Weight applied to the selected FFT band
+    float log_line_interval_s = 0.4f;     // Interval between log entries when streaming
+    bool log_loop_messages = true;        // Whether to loop messages when the end is reached
+    bool log_show_border = true;          // Display a frame border around the log window
+    int log_padding_y = 1;                // Vertical padding between border and log text
+    int log_padding_x = 2;                // Horizontal padding between border and log text
+    std::string log_title;                // Optional title displayed on the top border
     // Add more generic parameters as needed, e.g., std::map<std::string, std::string> params;
 };
 

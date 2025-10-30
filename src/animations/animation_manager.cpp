@@ -6,6 +6,7 @@
 #include "cyber_rain_animation.h" // Include for CyberRainAnimation
 #include "lightning_wave_animation.h" // Include for LightningWaveAnimation
 #include "breathe_animation.h" // Include for BreatheAnimation
+#include "logging_animation.h" // Include for LoggingAnimation
 
 namespace why {
 namespace animations {
@@ -48,6 +49,8 @@ void AnimationManager::load_animations(notcurses* nc, const AppConfig& app_confi
             new_animation = std::make_unique<LightningWaveAnimation>();
         } else if (cleaned_type == "Breathe") {
             new_animation = std::make_unique<BreatheAnimation>();
+        } else if (cleaned_type == "Logging") {
+            new_animation = std::make_unique<LoggingAnimation>();
         }
         // Add more animation types here as they are implemented
 

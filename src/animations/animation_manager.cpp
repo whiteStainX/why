@@ -1,38 +1,72 @@
 #include "animation_manager.h"
-#include <iostream> // For std::clog and std::cerr
-#include "random_text_animation.h" // Include for RandomTextAnimation
-#include "bar_visual_animation.h" // Include for BarVisualAnimation
-#include "ascii_matrix_animation.h" // Include for AsciiMatrixAnimation
-#include "cyber_rain_animation.h" // Include for CyberRainAnimation
-#include "lightning_wave_animation.h" // Include for LightningWaveAnimation
-#include "breathe_animation.h" // Include for BreatheAnimation
-#include "logging_animation.h" // Include for LoggingAnimation
+
+#include <iostream>
+
+#include "random_text_animation.h"
+#include "bar_visual_animation.h"
+#include "ascii_matrix_animation.h"
+#include "cyber_rain_animation.h"
+#include "lightning_wave_animation.h"
+#include "breathe_animation.h"
+#include "logging_animation.h"
 
 namespace why {
 namespace animations {
 
 namespace {
 std::string clean_string_value(std::string value) {
-    // Trim leading whitespace
     size_t first = value.find_first_not_of(" \t\n\r\f\v");
     if (std::string::npos == first) {
         return "";
     }
-    // Trim trailing whitespace
+
     size_t last = value.find_last_not_of(" \t\n\r\f\v");
     value = value.substr(first, (last - first + 1));
 
-    // Remove surrounding quotes if present
     if (value.length() >= 2 &&
-        ((value.front() == '\"' && value.back() == '\"' ) ||
-         (value.front() == '\'' && value.back() == '\'' ))) {
+        ((value.front() == '\"' && value.back() == '\"') ||
+         (value.front() == '\'' && value.back() == '\''))) {
         value = value.substr(1, value.length() - 2);
     }
     return value;
 }
+
+bool has_custom_triggers(const AnimationConfig& config) {
+    return config.trigger_band_index != -1 ||
+           config.trigger_beat_min > 0.0f ||
+           config.trigger_beat_max < 1.0f;
+}
+
+bool evaluate_band_condition(const AnimationConfig& config,
+                             const std::vector<float>& bands) {
+    if (config.trigger_band_index == -1) {
+        return true;
+    }
+
+    const int index = config.trigger_band_index;
+    if (index < 0 || index >= static_cast<int>(bands.size())) {
+        return false;
+    }
+
+    return bands[static_cast<std::size_t>(index)] >= config.trigger_threshold;
+}
+
+bool evaluate_beat_condition(const AnimationConfig& config, float beat_strength) {
+    if (config.trigger_beat_min <= 0.0f && config.trigger_beat_max >= 1.0f) {
+        return true;
+    }
+
+    return beat_strength >= config.trigger_beat_min &&
+           beat_strength <= config.trigger_beat_max;
+}
+
 } // namespace
 
 void AnimationManager::load_animations(notcurses* nc, const AppConfig& app_config) {
+    event_bus_.reset();
+    animations_.clear();
+    animations_.reserve(app_config.animations.size());
+
     for (const auto& anim_config : app_config.animations) {
         std::unique_ptr<Animation> new_animation;
         std::string cleaned_type = clean_string_value(anim_config.type);
@@ -52,90 +86,83 @@ void AnimationManager::load_animations(notcurses* nc, const AppConfig& app_confi
         } else if (cleaned_type == "Logging") {
             new_animation = std::make_unique<LoggingAnimation>();
         }
-        // Add more animation types here as they are implemented
 
         if (new_animation) {
-            new_animation->init(nc, app_config); // Pass the full app_config for init
-            animations_.push_back({std::move(new_animation), anim_config});
+            new_animation->init(nc, app_config);
+
+            auto managed = std::make_unique<ManagedAnimation>();
+            managed->config = anim_config;
+            managed->animation = std::move(new_animation);
+
+            managed->animation->bind_events(managed->config, event_bus_);
+            register_animation_callbacks(*managed);
+            animations_.push_back(std::move(managed));
         } else {
             // std::cerr << "[AnimationManager::load_animations] Unknown animation type: " << anim_config.type << std::endl;
         }
     }
 }
 
+void AnimationManager::register_animation_callbacks(ManagedAnimation& managed_animation) {
+    if (!managed_animation.animation) {
+        return;
+    }
+
+    ManagedAnimation* managed_ptr = &managed_animation;
+    event_bus_.subscribe<events::FrameUpdateEvent>(
+        [managed_ptr](const events::FrameUpdateEvent& event) {
+            Animation* animation = managed_ptr->animation.get();
+            const AnimationConfig& config = managed_ptr->config;
+
+            bool meets_band = evaluate_band_condition(config, event.bands);
+            bool meets_beat = evaluate_beat_condition(config, event.beat_strength);
+            bool meets_all_conditions = meets_band && meets_beat;
+
+            bool should_be_active = has_custom_triggers(config)
+                                        ? meets_all_conditions
+                                        : config.initially_active;
+
+            if (should_be_active && !animation->is_active()) {
+                animation->activate();
+            } else if (!should_be_active && animation->is_active()) {
+                animation->deactivate();
+            }
+
+            if (animation->is_active()) {
+                animation->update(event.delta_time, event.metrics, event.bands, event.beat_strength);
+            }
+        });
+}
+
 void AnimationManager::update_all(float delta_time,
                                   const AudioMetrics& metrics,
                                   const std::vector<float>& bands,
                                   float beat_strength) {
-    for (auto& managed_anim : animations_) {
-        Animation* anim = managed_anim.animation.get();
-        const AnimationConfig& config = managed_anim.config;
+    events::BeatDetectedEvent beat_event{beat_strength};
+    event_bus_.publish(beat_event);
 
-        bool meets_all_conditions = true;
-
-        // Evaluate band trigger condition
-        if (config.trigger_band_index != -1) {
-            if (config.trigger_band_index < static_cast<int>(bands.size())) {
-                if (bands[config.trigger_band_index] < config.trigger_threshold) {
-                    meets_all_conditions = false;
-                }
-            } else {
-                meets_all_conditions = false; // Invalid band index means condition not met
-            }
-        }
-
-        // Evaluate beat trigger condition
-        if (config.trigger_beat_min > 0.0f || config.trigger_beat_max < 1.0f) {
-            if (beat_strength < config.trigger_beat_min || beat_strength > config.trigger_beat_max) {
-                meets_all_conditions = false;
-            }
-        }
-
-        // Determine final should_be_active state
-        bool should_be_active;
-        if (config.trigger_band_index == -1 && config.trigger_beat_min == 0.0f && config.trigger_beat_max == 1.0f) {
-            // No specific triggers defined, use initially_active state
-            should_be_active = config.initially_active;
-        } else {
-            // Triggers are defined, so activation depends on meeting all conditions
-            should_be_active = meets_all_conditions;
-        }
-
-        // Apply activation/deactivation
-        if (should_be_active && !anim->is_active()) {
-            anim->activate();
-        } else if (!should_be_active && anim->is_active()) {
-            anim->deactivate();
-        }
-
-        // Update active animations
-        if (anim->is_active()) {
-            anim->update(delta_time, metrics, bands, beat_strength);
-        }
-    }
+    events::FrameUpdateEvent frame_event{delta_time, metrics, bands, beat_strength};
+    event_bus_.publish(frame_event);
 }
 
 void AnimationManager::render_all(notcurses* nc) {
-    // Sort animations by Z-index before rendering
     std::sort(animations_.begin(), animations_.end(), [](const auto& a, const auto& b) {
-        return a.animation->get_z_index() < b.animation->get_z_index();
+        return a->animation->get_z_index() < b->animation->get_z_index();
     });
 
-    // Explicitly set Z-order for each plane
     for (const auto& managed_anim : animations_) {
-        if (managed_anim.animation->get_plane()) {
-            // Move planes to the bottom first, then they will be moved up by subsequent animations
-            // based on their sorted z_index. This ensures correct relative ordering.
-            ncplane_move_bottom(managed_anim.animation->get_plane());
+        if (auto* plane = managed_anim->animation->get_plane()) {
+            ncplane_move_bottom(plane);
         }
     }
 
     for (const auto& managed_anim : animations_) {
-        if (managed_anim.animation->is_active()) {
-            managed_anim.animation->render(nc);
+        if (managed_anim->animation->is_active()) {
+            managed_anim->animation->render(nc);
         }
     }
 }
 
 } // namespace animations
 } // namespace why
+

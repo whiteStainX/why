@@ -8,6 +8,12 @@
 #include "../config.h" // Include AppConfig
 
 namespace why {
+namespace events {
+class EventBus;
+} // namespace events
+} // namespace why
+
+namespace why {
 namespace animations {
 
 class Animation {
@@ -28,7 +34,13 @@ public:
     virtual bool is_active() const = 0;
     virtual int get_z_index() const = 0;
     virtual ncplane* get_plane() const = 0; // Or a way to get the primary plane
+
+    virtual void bind_events(const AnimationConfig& config, events::EventBus& bus) {
+        (void)config;
+        (void)bus;
+    }
 };
 
 } // namespace animations
 } // namespace why
+

@@ -19,18 +19,12 @@ constexpr float kDefaultWaveSpeed = 42.0f;
 constexpr int kDefaultWaveFrontWidth = 2;
 constexpr int kDefaultWaveTailLength = 7;
 constexpr float kDefaultNoveltySmoothing = 0.18f;
+constexpr float kDefaultBackgroundSmoothing = 1.0f;
 constexpr float kDefaultNoveltyThreshold = 0.35f;
 constexpr float kDefaultEnergyFloor = 0.015f;
 constexpr float kDefaultDetectionCooldown = 0.65f;
 constexpr float kDefaultActivationDecay = 0.8f;
-constexpr float kInvLn2 = 1.4426950408889634074f; // 1 / ln(2)
 constexpr float kEnergyEpsilon = 1e-6f;
-
-constexpr float kWeightJensenShannon = 0.5f;
-constexpr float kWeightFlux = 0.25f;
-constexpr float kWeightCentroid = 0.15f;
-constexpr float kWeightFlatness = 0.06f;
-constexpr float kWeightCrest = 0.04f;
 
 std::vector<std::string> parse_glyphs(const std::string& source) {
     std::vector<std::string> glyphs;
@@ -92,11 +86,9 @@ LightningWaveAnimation::LightningWaveAnimation()
       detection_cooldown_timer_s_(0.0f),
       novelty_smoothing_s_(kDefaultNoveltySmoothing),
       novelty_smoothed_(0.0f),
+      background_smoothing_s_(kDefaultBackgroundSmoothing),
       activation_decay_s_(kDefaultActivationDecay),
-      previous_centroid_(0.0f),
-      previous_flatness_(0.0f),
-      previous_crest_(0.0f),
-      has_previous_signature_(false) {}
+      has_background_signature_(false) {}
 
 LightningWaveAnimation::~LightningWaveAnimation() {
     if (plane_) {
@@ -135,6 +127,7 @@ void LightningWaveAnimation::init(notcurses* nc, const AppConfig& config) {
     detection_cooldown_timer_s_ = 0.0f;
     novelty_smoothing_s_ = kDefaultNoveltySmoothing;
     novelty_smoothed_ = 0.0f;
+    background_smoothing_s_ = kDefaultBackgroundSmoothing;
     activation_decay_s_ = kDefaultActivationDecay;
     reset_spectral_history();
 
@@ -185,6 +178,7 @@ void LightningWaveAnimation::configure_from_app(const AppConfig& config) {
             detection_energy_floor_ = std::max(anim_config.lightning_energy_floor, 0.0f);
             detection_cooldown_s_ = std::max(anim_config.lightning_detection_cooldown_s, 0.0f);
             novelty_smoothing_s_ = std::max(anim_config.lightning_novelty_smoothing_s, 0.01f);
+            background_smoothing_s_ = std::max(anim_config.lightning_background_smoothing_s, 0.01f);
             activation_decay_s_ = std::max(anim_config.lightning_activation_decay_s, 0.01f);
             if (anim_config.plane_y) {
                 plane_origin_y_ = *anim_config.plane_y;
@@ -463,38 +457,6 @@ LightningWaveAnimation::analyze_spectrum(const std::vector<float>& bands) const 
     return snapshot;
 }
 
-float LightningWaveAnimation::compute_js_divergence(const std::vector<float>& current,
-                                                    const std::vector<float>& previous) const {
-    const std::size_t size = std::min(current.size(), previous.size());
-    if (size == 0) {
-        return 0.0f;
-    }
-
-    float jsd = 0.0f;
-    for (std::size_t i = 0; i < size; ++i) {
-        const float p = std::clamp(current[i], kEnergyEpsilon, 1.0f);
-        const float q = std::clamp(previous[i], kEnergyEpsilon, 1.0f);
-        const float m = 0.5f * (p + q);
-        jsd += 0.5f * (p * (std::log(p) - std::log(m)) + q * (std::log(q) - std::log(m)));
-    }
-
-    jsd = std::max(jsd * kInvLn2, 0.0f);
-    return std::clamp(jsd, 0.0f, 1.0f);
-}
-
-float LightningWaveAnimation::compute_flux(const std::vector<float>& current,
-                                           const std::vector<float>& previous) const {
-    const std::size_t size = std::min(current.size(), previous.size());
-    float flux = 0.0f;
-    for (std::size_t i = 0; i < size; ++i) {
-        const float diff = current[i] - previous[i];
-        if (diff > 0.0f) {
-            flux += diff;
-        }
-    }
-    return flux;
-}
-
 bool LightningWaveAnimation::evaluate_novelty(const SpectralSnapshot& snapshot,
                                               float delta_time,
                                               float& out_strength) {
@@ -503,52 +465,52 @@ bool LightningWaveAnimation::evaluate_novelty(const SpectralSnapshot& snapshot,
         return false;
     }
 
-    if (!has_previous_signature_) {
-        previous_distribution_ = snapshot.distribution;
-        previous_centroid_ = snapshot.centroid;
-        previous_flatness_ = snapshot.flatness;
-        previous_crest_ = snapshot.crest;
-        has_previous_signature_ = true;
+    if (!has_background_signature_ || background_distribution_.size() != snapshot.distribution.size()) {
+        background_distribution_ = snapshot.distribution;
+        has_background_signature_ = true;
         out_strength = novelty_smoothed_;
         return false;
     }
 
-    const float jsd = compute_js_divergence(snapshot.distribution, previous_distribution_);
-    const float flux = compute_flux(snapshot.distribution, previous_distribution_);
-    const float centroid_norm = std::abs(snapshot.centroid - previous_centroid_) /
-                                std::max(1.0f, static_cast<float>(snapshot.distribution.size() - 1));
-    const float flatness_diff = std::abs(snapshot.flatness - previous_flatness_);
-    const float crest_diff = std::abs(snapshot.crest - previous_crest_);
-    const float flux_norm = std::clamp(flux * 0.5f, 0.0f, 1.0f);
+    float dot = 0.0f;
+    float current_norm_sq = 0.0f;
+    float background_norm_sq = 0.0f;
+    for (std::size_t i = 0; i < snapshot.distribution.size(); ++i) {
+        const float current = snapshot.distribution[i];
+        const float background = background_distribution_[i];
+        dot += current * background;
+        current_norm_sq += current * current;
+        background_norm_sq += background * background;
+    }
 
-    const float novelty_raw = std::clamp(kWeightJensenShannon * jsd +
-                                             kWeightFlux * flux_norm +
-                                             kWeightCentroid * centroid_norm +
-                                             kWeightFlatness * flatness_diff +
-                                             kWeightCrest * crest_diff,
-                                         0.0f,
-                                         1.0f);
+    float similarity = 1.0f;
+    const float denom = std::sqrt(current_norm_sq) * std::sqrt(background_norm_sq);
+    if (denom > kEnergyEpsilon) {
+        similarity = std::clamp(dot / denom, 0.0f, 1.0f);
+    }
+
+    const float novelty_raw = std::clamp(1.0f - similarity, 0.0f, 1.0f);
 
     const float smoothing = std::max(novelty_smoothing_s_, 0.01f);
     const float lerp_alpha = std::clamp(delta_time / smoothing, 0.0f, 1.0f);
-    novelty_smoothed_ = std::clamp(novelty_smoothed_ + (novelty_raw - novelty_smoothed_) * lerp_alpha, 0.0f, 1.0f);
+    novelty_smoothed_ =
+        std::clamp(novelty_smoothed_ + (novelty_raw - novelty_smoothed_) * lerp_alpha, 0.0f, 1.0f);
 
-    previous_distribution_ = snapshot.distribution;
-    previous_centroid_ = snapshot.centroid;
-    previous_flatness_ = snapshot.flatness;
-    previous_crest_ = snapshot.crest;
-    has_previous_signature_ = true;
+    const float background_smoothing = std::max(background_smoothing_s_, 0.01f);
+    const float background_alpha = std::clamp(delta_time / background_smoothing, 0.0f, 1.0f);
+    for (std::size_t i = 0; i < background_distribution_.size(); ++i) {
+        const float current = snapshot.distribution[i];
+        float& background = background_distribution_[i];
+        background += (current - background) * background_alpha;
+    }
 
     out_strength = novelty_smoothed_;
     return novelty_smoothed_ >= novelty_threshold_;
 }
 
 void LightningWaveAnimation::reset_spectral_history() {
-    previous_distribution_.clear();
-    previous_centroid_ = 0.0f;
-    previous_flatness_ = 0.0f;
-    previous_crest_ = 0.0f;
-    has_previous_signature_ = false;
+    background_distribution_.clear();
+    has_background_signature_ = false;
 }
 
 void LightningWaveAnimation::update(float delta_time,

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <deque>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -32,14 +33,50 @@ public:
     ncplane* get_plane() const override { return plane_; }
 
 private:
+    struct Condition {
+        enum class Type {
+            BeatAbove,
+            BeatBelow,
+            RmsAbove,
+            RmsBelow,
+            PeakAbove,
+            PeakBelow,
+            DroppedAbove,
+            AudioActive,
+            AudioInactive,
+        };
+
+        Type type;
+        float threshold = 0.0f;
+    };
+
+    struct MessageEntry {
+        std::string text;
+        std::vector<std::string> tags;
+        std::vector<Condition> conditions;
+        bool once = false;
+        bool triggered_once = false;
+        bool last_condition_state = false;
+
+        bool is_conditional() const { return !conditions.empty(); }
+    };
+
     void load_messages();
     void ensure_plane(notcurses* nc);
     void recalculate_content_geometry();
     void append_next_line();
+    void append_log_entry(const std::string& entry);
+    void trim_history();
+    void process_conditional_messages(const AudioMetrics& metrics, float beat_strength);
+    bool evaluate_conditions(const MessageEntry& entry,
+                             const AudioMetrics& metrics,
+                             float beat_strength);
+    std::vector<std::string> wrap_text(const std::string& text, int width) const;
+    int estimate_line_usage(const std::string& text, int width) const;
     void redraw();
     void draw_border();
     void draw_logs();
-    std::string truncate_for_width(const std::string& line) const;
+    static std::optional<Condition> parse_condition_tag(const std::string& tag);
 
     ncplane* plane_ = nullptr;
     int z_index_ = 0;
@@ -60,9 +97,10 @@ private:
     int content_origin_y_ = 0;
     int content_origin_x_ = 0;
 
-    std::vector<std::string> messages_;
+    std::vector<MessageEntry> messages_;
+    std::vector<std::size_t> sequential_indices_;
     std::size_t next_message_index_ = 0;
-    std::deque<std::string> visible_lines_;
+    std::deque<std::string> visible_entries_;
 
     float line_interval_s_ = 0.4f;
     float time_since_last_line_ = 0.0f;

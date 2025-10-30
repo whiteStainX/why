@@ -127,6 +127,12 @@ wave_tail_length_cols = 8
 wave_alternate_direction = true
 wave_direction_right = true
 trigger_cooldown_s = 0.2
+# Lightning detection tuned for instrument novelty sweeps
+lightning_novelty_threshold = 0.28
+lightning_energy_floor = 0.01
+lightning_detection_cooldown_s = 0.75
+lightning_novelty_smoothing_s = 0.22
+lightning_activation_decay_s = 0.9
 plane_y = 0
 plane_x = 0
 

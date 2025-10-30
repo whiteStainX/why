@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <numeric>
 #include <sstream>
 
 namespace why {
@@ -17,7 +18,19 @@ constexpr float kDefaultFadeDuration = 1.0f;
 constexpr float kDefaultWaveSpeed = 42.0f;
 constexpr int kDefaultWaveFrontWidth = 2;
 constexpr int kDefaultWaveTailLength = 7;
-constexpr float kDefaultActivationSmoothing = 0.12f;
+constexpr float kDefaultNoveltySmoothing = 0.18f;
+constexpr float kDefaultNoveltyThreshold = 0.35f;
+constexpr float kDefaultEnergyFloor = 0.015f;
+constexpr float kDefaultDetectionCooldown = 0.65f;
+constexpr float kDefaultActivationDecay = 0.8f;
+constexpr float kInvLn2 = 1.4426950408889634074f; // 1 / ln(2)
+constexpr float kEnergyEpsilon = 1e-6f;
+
+constexpr float kWeightJensenShannon = 0.5f;
+constexpr float kWeightFlux = 0.25f;
+constexpr float kWeightCentroid = 0.15f;
+constexpr float kWeightFlatness = 0.06f;
+constexpr float kWeightCrest = 0.04f;
 
 std::vector<std::string> parse_glyphs(const std::string& source) {
     std::vector<std::string> glyphs;
@@ -72,8 +85,18 @@ LightningWaveAnimation::LightningWaveAnimation()
       persistence_duration_s_(kDefaultPersistenceDuration),
       fade_duration_s_(kDefaultFadeDuration),
       trigger_threshold_(0.5f),
-      activation_smoothing_s_(kDefaultActivationSmoothing),
-      smoothed_energy_(0.0f) {}
+      activation_level_(0.0f),
+      novelty_threshold_(kDefaultNoveltyThreshold),
+      detection_energy_floor_(kDefaultEnergyFloor),
+      detection_cooldown_s_(kDefaultDetectionCooldown),
+      detection_cooldown_timer_s_(0.0f),
+      novelty_smoothing_s_(kDefaultNoveltySmoothing),
+      novelty_smoothed_(0.0f),
+      activation_decay_s_(kDefaultActivationDecay),
+      previous_centroid_(0.0f),
+      previous_flatness_(0.0f),
+      previous_crest_(0.0f),
+      has_previous_signature_(false) {}
 
 LightningWaveAnimation::~LightningWaveAnimation() {
     if (plane_) {
@@ -106,7 +129,14 @@ void LightningWaveAnimation::init(notcurses* nc, const AppConfig& config) {
     trigger_band_index_ = -1;
     trigger_threshold_ = 0.5f;
     activation_level_ = 0.0f;
-    smoothed_energy_ = 0.0f;
+    novelty_threshold_ = kDefaultNoveltyThreshold;
+    detection_energy_floor_ = kDefaultEnergyFloor;
+    detection_cooldown_s_ = kDefaultDetectionCooldown;
+    detection_cooldown_timer_s_ = 0.0f;
+    novelty_smoothing_s_ = kDefaultNoveltySmoothing;
+    novelty_smoothed_ = 0.0f;
+    activation_decay_s_ = kDefaultActivationDecay;
+    reset_spectral_history();
 
     plane_rows_ = 0;
     plane_cols_ = 0;
@@ -139,9 +169,6 @@ void LightningWaveAnimation::configure_from_app(const AppConfig& config) {
             if (anim_config.fade_duration_s > 0.0f) {
                 fade_duration_s_ = anim_config.fade_duration_s;
             }
-            if (anim_config.trigger_cooldown_s > 0.0f) {
-                activation_smoothing_s_ = anim_config.trigger_cooldown_s;
-            }
             if (anim_config.wave_speed_cols_per_s > 0.0f) {
                 wave_speed_cols_per_s_ = anim_config.wave_speed_cols_per_s;
             }
@@ -154,6 +181,11 @@ void LightningWaveAnimation::configure_from_app(const AppConfig& config) {
             alternate_direction_ = anim_config.wave_alternate_direction;
             next_direction_right_ = anim_config.wave_direction_right;
             wave_direction_right_ = next_direction_right_;
+            novelty_threshold_ = std::clamp(anim_config.lightning_novelty_threshold, 0.01f, 1.0f);
+            detection_energy_floor_ = std::max(anim_config.lightning_energy_floor, 0.0f);
+            detection_cooldown_s_ = std::max(anim_config.lightning_detection_cooldown_s, 0.0f);
+            novelty_smoothing_s_ = std::max(anim_config.lightning_novelty_smoothing_s, 0.01f);
+            activation_decay_s_ = std::max(anim_config.lightning_activation_decay_s, 0.01f);
             if (anim_config.plane_y) {
                 plane_origin_y_ = *anim_config.plane_y;
             }
@@ -165,6 +197,10 @@ void LightningWaveAnimation::configure_from_app(const AppConfig& config) {
             }
             if (anim_config.plane_cols) {
                 plane_cols_ = static_cast<unsigned int>(std::max(1, *anim_config.plane_cols));
+            }
+            if (anim_config.trigger_cooldown_s > 0.0f) {
+                novelty_smoothing_s_ = anim_config.trigger_cooldown_s;
+                detection_cooldown_s_ = std::max(detection_cooldown_s_, anim_config.trigger_cooldown_s);
             }
             break;
         }
@@ -253,19 +289,22 @@ void LightningWaveAnimation::ensure_glyphs_loaded() {
 
 void LightningWaveAnimation::activate() {
     is_active_ = true;
-    start_wave();
+    reset_spectral_history();
+    novelty_smoothed_ = 0.0f;
+    detection_cooldown_timer_s_ = 0.0f;
 }
 
 void LightningWaveAnimation::deactivate() {
     is_active_ = false;
     persistence_timer_s_ = persistence_duration_s_;
+    reset_spectral_history();
 }
 
 bool LightningWaveAnimation::is_active() const {
     return is_active_ || wave_active_ || persistence_timer_s_ > 0.0f || has_visible_columns();
 }
 
-void LightningWaveAnimation::start_wave() {
+void LightningWaveAnimation::start_wave(float intensity) {
     if (!plane_ || plane_cols_ == 0u) {
         return;
     }
@@ -285,8 +324,9 @@ void LightningWaveAnimation::start_wave() {
 
     wave_head_position_ = wave_direction_right_ ? -1.0f : static_cast<float>(plane_cols_);
     persistence_timer_s_ = persistence_duration_s_;
-    activation_level_ = 1.0f;
-    smoothed_energy_ = clamp01(trigger_threshold_);
+    activation_level_ = clamp01(intensity);
+    novelty_smoothed_ = activation_level_;
+    detection_cooldown_timer_s_ = detection_cooldown_s_;
 }
 
 void LightningWaveAnimation::decay_columns(float delta_time) {
@@ -357,6 +397,160 @@ bool LightningWaveAnimation::has_visible_columns() const {
     });
 }
 
+void LightningWaveAnimation::update_activation_decay(float delta_time) {
+    if (activation_level_ <= 0.0f) {
+        activation_level_ = 0.0f;
+        return;
+    }
+
+    if (activation_decay_s_ <= 0.0f) {
+        activation_level_ = 0.0f;
+        return;
+    }
+
+    const float decay = delta_time / activation_decay_s_;
+    activation_level_ = std::max(0.0f, activation_level_ - decay);
+}
+
+LightningWaveAnimation::SpectralSnapshot
+LightningWaveAnimation::analyze_spectrum(const std::vector<float>& bands) const {
+    SpectralSnapshot snapshot;
+    const std::size_t count = bands.size();
+    snapshot.distribution.resize(count, 0.0f);
+    if (count == 0) {
+        return snapshot;
+    }
+
+    float total_energy = 0.0f;
+    float log_sum = 0.0f;
+    float max_energy = 0.0f;
+    for (std::size_t i = 0; i < count; ++i) {
+        const float energy = std::max(bands[i], 0.0f);
+        snapshot.distribution[i] = energy;
+        total_energy += energy;
+        max_energy = std::max(max_energy, energy);
+        log_sum += std::log(std::max(energy, kEnergyEpsilon));
+    }
+
+    snapshot.total_energy = total_energy;
+    if (total_energy <= kEnergyEpsilon) {
+        std::fill(snapshot.distribution.begin(), snapshot.distribution.end(), 0.0f);
+        snapshot.centroid = 0.0f;
+        snapshot.flatness = 0.0f;
+        snapshot.crest = 0.0f;
+        return snapshot;
+    }
+
+    const float inv_total = 1.0f / total_energy;
+    float centroid = 0.0f;
+    for (std::size_t i = 0; i < count; ++i) {
+        snapshot.distribution[i] *= inv_total;
+        centroid += snapshot.distribution[i] * static_cast<float>(i);
+    }
+    snapshot.centroid = centroid;
+
+    const float band_count = static_cast<float>(count);
+    const float arithmetic_mean = total_energy / band_count;
+    const float geometric_mean = std::exp(log_sum / band_count);
+    snapshot.flatness = (arithmetic_mean > kEnergyEpsilon)
+                            ? std::clamp(geometric_mean / arithmetic_mean, 0.0f, 1.0f)
+                            : 0.0f;
+
+    const float crest_ratio =
+        (arithmetic_mean > kEnergyEpsilon) ? max_energy / (arithmetic_mean + kEnergyEpsilon) : 0.0f;
+    snapshot.crest = std::clamp(std::tanh(std::max(0.0f, crest_ratio - 1.0f) * 0.35f), 0.0f, 1.0f);
+
+    return snapshot;
+}
+
+float LightningWaveAnimation::compute_js_divergence(const std::vector<float>& current,
+                                                    const std::vector<float>& previous) const {
+    const std::size_t size = std::min(current.size(), previous.size());
+    if (size == 0) {
+        return 0.0f;
+    }
+
+    float jsd = 0.0f;
+    for (std::size_t i = 0; i < size; ++i) {
+        const float p = std::clamp(current[i], kEnergyEpsilon, 1.0f);
+        const float q = std::clamp(previous[i], kEnergyEpsilon, 1.0f);
+        const float m = 0.5f * (p + q);
+        jsd += 0.5f * (p * (std::log(p) - std::log(m)) + q * (std::log(q) - std::log(m)));
+    }
+
+    jsd = std::max(jsd * kInvLn2, 0.0f);
+    return std::clamp(jsd, 0.0f, 1.0f);
+}
+
+float LightningWaveAnimation::compute_flux(const std::vector<float>& current,
+                                           const std::vector<float>& previous) const {
+    const std::size_t size = std::min(current.size(), previous.size());
+    float flux = 0.0f;
+    for (std::size_t i = 0; i < size; ++i) {
+        const float diff = current[i] - previous[i];
+        if (diff > 0.0f) {
+            flux += diff;
+        }
+    }
+    return flux;
+}
+
+bool LightningWaveAnimation::evaluate_novelty(const SpectralSnapshot& snapshot,
+                                              float delta_time,
+                                              float& out_strength) {
+    if (snapshot.distribution.empty()) {
+        out_strength = 0.0f;
+        return false;
+    }
+
+    if (!has_previous_signature_) {
+        previous_distribution_ = snapshot.distribution;
+        previous_centroid_ = snapshot.centroid;
+        previous_flatness_ = snapshot.flatness;
+        previous_crest_ = snapshot.crest;
+        has_previous_signature_ = true;
+        out_strength = novelty_smoothed_;
+        return false;
+    }
+
+    const float jsd = compute_js_divergence(snapshot.distribution, previous_distribution_);
+    const float flux = compute_flux(snapshot.distribution, previous_distribution_);
+    const float centroid_norm = std::abs(snapshot.centroid - previous_centroid_) /
+                                std::max(1.0f, static_cast<float>(snapshot.distribution.size() - 1));
+    const float flatness_diff = std::abs(snapshot.flatness - previous_flatness_);
+    const float crest_diff = std::abs(snapshot.crest - previous_crest_);
+    const float flux_norm = std::clamp(flux * 0.5f, 0.0f, 1.0f);
+
+    const float novelty_raw = std::clamp(kWeightJensenShannon * jsd +
+                                             kWeightFlux * flux_norm +
+                                             kWeightCentroid * centroid_norm +
+                                             kWeightFlatness * flatness_diff +
+                                             kWeightCrest * crest_diff,
+                                         0.0f,
+                                         1.0f);
+
+    const float smoothing = std::max(novelty_smoothing_s_, 0.01f);
+    const float lerp_alpha = std::clamp(delta_time / smoothing, 0.0f, 1.0f);
+    novelty_smoothed_ = std::clamp(novelty_smoothed_ + (novelty_raw - novelty_smoothed_) * lerp_alpha, 0.0f, 1.0f);
+
+    previous_distribution_ = snapshot.distribution;
+    previous_centroid_ = snapshot.centroid;
+    previous_flatness_ = snapshot.flatness;
+    previous_crest_ = snapshot.crest;
+    has_previous_signature_ = true;
+
+    out_strength = novelty_smoothed_;
+    return novelty_smoothed_ >= novelty_threshold_;
+}
+
+void LightningWaveAnimation::reset_spectral_history() {
+    previous_distribution_.clear();
+    previous_centroid_ = 0.0f;
+    previous_flatness_ = 0.0f;
+    previous_crest_ = 0.0f;
+    has_previous_signature_ = false;
+}
+
 void LightningWaveAnimation::update(float delta_time,
                                     const AudioMetrics& /*metrics*/,
                                     const std::vector<float>& bands,
@@ -373,25 +567,33 @@ void LightningWaveAnimation::update(float delta_time,
 
     decay_columns(delta_time);
 
-    if (is_active_ && !wave_active_) {
-        start_wave();
+    if (detection_cooldown_timer_s_ > 0.0f) {
+        detection_cooldown_timer_s_ = std::max(0.0f, detection_cooldown_timer_s_ - delta_time);
+    }
+
+    if (is_active_) {
+        SpectralSnapshot snapshot = analyze_spectrum(bands);
+        if (snapshot.total_energy >= detection_energy_floor_) {
+            float novelty_strength = 0.0f;
+            const bool novelty_hit = evaluate_novelty(snapshot, delta_time, novelty_strength);
+            activation_level_ = std::max(activation_level_, clamp01(novelty_strength));
+            if (novelty_hit && detection_cooldown_timer_s_ <= 0.0f) {
+                const float boosted_intensity = std::clamp(novelty_strength * 1.15f, 0.35f, 1.0f);
+                start_wave(boosted_intensity);
+            }
+        } else {
+            reset_spectral_history();
+            const float smoothing = std::max(novelty_smoothing_s_, 0.01f);
+            const float lerp_alpha = std::clamp(delta_time / smoothing, 0.0f, 1.0f);
+            novelty_smoothed_ = std::clamp(novelty_smoothed_ + (0.0f - novelty_smoothed_) * lerp_alpha, 0.0f, 1.0f);
+        }
     }
 
     if (wave_active_) {
-        if (trigger_band_index_ >= 0 && trigger_band_index_ < static_cast<int>(bands.size())) {
-            const float target_energy = clamp01(bands[static_cast<std::size_t>(trigger_band_index_)]);
-            const float smoothing = std::max(activation_smoothing_s_, 0.01f);
-            const float lerp_alpha = std::clamp(delta_time / smoothing, 0.0f, 1.0f);
-            smoothed_energy_ = smoothed_energy_ + (target_energy - smoothed_energy_) * lerp_alpha;
-            const float threshold = clamp01(trigger_threshold_);
-            const float denom = std::max(0.05f, 1.0f - threshold);
-            activation_level_ = clamp01((smoothed_energy_ - threshold) / denom);
-        } else {
-            activation_level_ = 1.0f;
-        }
-
         update_wave(delta_time);
     }
+
+    update_activation_decay(delta_time);
 }
 
 void LightningWaveAnimation::render(notcurses* /*nc*/) {

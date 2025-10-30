@@ -34,16 +34,35 @@ private:
         float intensity = 0.0f;
     };
 
+    struct SpectralSnapshot {
+        std::vector<float> distribution;
+        float total_energy = 0.0f;
+        float centroid = 0.0f;
+        float flatness = 0.0f;
+        float crest = 0.0f;
+    };
+
     void configure_from_app(const AppConfig& config);
     void create_plane(notcurses* nc);
     void refresh_dimensions();
     bool load_glyphs_from_file(const std::string& path);
     void ensure_glyphs_loaded();
 
-    void start_wave();
+    void start_wave(float intensity);
     void update_wave(float delta_time);
     void decay_columns(float delta_time);
     bool has_visible_columns() const;
+    void update_activation_decay(float delta_time);
+
+    SpectralSnapshot analyze_spectrum(const std::vector<float>& bands) const;
+    float compute_js_divergence(const std::vector<float>& current,
+                                const std::vector<float>& previous) const;
+    float compute_flux(const std::vector<float>& current,
+                       const std::vector<float>& previous) const;
+    bool evaluate_novelty(const SpectralSnapshot& snapshot,
+                          float delta_time,
+                          float& out_strength);
+    void reset_spectral_history();
 
     ncplane* plane_ = nullptr;
     unsigned int plane_rows_ = 0;
@@ -75,9 +94,19 @@ private:
     int trigger_band_index_ = -1;
     float trigger_threshold_ = 0.5f;
     float activation_level_ = 0.0f;
-    float activation_smoothing_s_ = 0.12f;
+    float novelty_threshold_ = 0.35f;
+    float detection_energy_floor_ = 0.015f;
+    float detection_cooldown_s_ = 0.65f;
+    float detection_cooldown_timer_s_ = 0.0f;
+    float novelty_smoothing_s_ = 0.18f;
+    float novelty_smoothed_ = 0.0f;
+    float activation_decay_s_ = 0.8f;
 
-    float smoothed_energy_ = 0.0f;
+    std::vector<float> previous_distribution_;
+    float previous_centroid_ = 0.0f;
+    float previous_flatness_ = 0.0f;
+    float previous_crest_ = 0.0f;
+    bool has_previous_signature_ = false;
 };
 
 } // namespace animations

@@ -27,6 +27,7 @@ set(WHY_SOURCES
   src/animations/cyber_rain_animation.cpp
   src/animations/lightning_wave_animation.cpp
   src/animations/breathe_animation.cpp
+  src/animations/logging_animation.cpp
   external/kissfft/kiss_fft.c
 )
 

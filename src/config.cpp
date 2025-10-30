@@ -509,6 +509,36 @@ ConfigLoadResult load_app_config(const std::string& path) {
             parse_int32(max_lines_it->second.value, anim_config.max_active_lines);
         }
 
+        const auto log_interval_it = raw_anim_config.find("log_line_interval_s");
+        if (log_interval_it != raw_anim_config.end()) {
+            parse_float32(log_interval_it->second.value, anim_config.log_line_interval_s);
+        }
+
+        const auto log_loop_it = raw_anim_config.find("log_loop_messages");
+        if (log_loop_it != raw_anim_config.end()) {
+            parse_bool(log_loop_it->second.value, anim_config.log_loop_messages);
+        }
+
+        const auto log_border_it = raw_anim_config.find("log_show_border");
+        if (log_border_it != raw_anim_config.end()) {
+            parse_bool(log_border_it->second.value, anim_config.log_show_border);
+        }
+
+        const auto log_padding_y_it = raw_anim_config.find("log_padding_y");
+        if (log_padding_y_it != raw_anim_config.end()) {
+            parse_int32(log_padding_y_it->second.value, anim_config.log_padding_y);
+        }
+
+        const auto log_padding_x_it = raw_anim_config.find("log_padding_x");
+        if (log_padding_x_it != raw_anim_config.end()) {
+            parse_int32(log_padding_x_it->second.value, anim_config.log_padding_x);
+        }
+
+        const auto log_title_it = raw_anim_config.find("log_title");
+        if (log_title_it != raw_anim_config.end()) {
+            anim_config.log_title = sanitize_string_value(log_title_it->second.value);
+        }
+
         const auto plane_y_it = raw_anim_config.find("plane_y");
         if (plane_y_it != raw_anim_config.end()) {
             int value = 0;

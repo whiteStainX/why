@@ -1,0 +1,15 @@
+2024-05-24T21:17:04Z [info] why::bootstrap - initializing runtime configuration
+2024-05-24T21:17:04Z [debug] why::audio - capture backend selected: pulse (48kHz @ 2ch)
+2024-05-24T21:17:05Z [info] why::dsp - fft size=1024 hop=256 bands=32 window=hann
+2024-05-24T21:17:05Z [debug] why::visual - registering animation pipeline (6 stages)
+2024-05-24T21:17:06Z [trace] why::audio - rms=0.012 peak=0.041 beat=0.08
+2024-05-24T21:17:07Z [warn]  why::plugins - optional plugin beat-flash-debug already loaded
+2024-05-24T21:17:09Z [info] why::metrics - frame=128 fps=60.1 latency=7.3ms
+2024-05-24T21:17:11Z [debug] why::visual - logging_animation queue depth=14/18
+2024-05-24T21:17:14Z [info] why::runtime - soft reload of assets/logging_animation.txt completed
+2024-05-24T21:17:17Z [error] why::network - telemetry endpoint unreachable (timeout)
+2024-05-24T21:17:18Z [info] why::network - retry scheduled in 30s
+2024-05-24T21:17:21Z [trace] why::audio - rms=0.018 peak=0.056 beat=0.11
+2024-05-24T21:17:24Z [debug] why::visual - applied beat accent palette boost=1.4x
+2024-05-24T21:17:27Z [info] why::metrics - frame=256 fps=59.8 latency=7.6ms
+2024-05-24T21:17:30Z [info] why::runtime - heartbeat ok, backlog=0

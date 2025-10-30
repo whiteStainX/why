@@ -1,13 +1,15 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 #include <vector>
-#include <algorithm>
 
 #include <notcurses/notcurses.h>
 
 #include "animation.h"
 #include "../config.h"
+#include "../events/event_bus.h"
+#include "../events/frame_events.h"
 
 namespace why {
 namespace animations {
@@ -24,13 +26,21 @@ public:
                     float beat_strength);
     void render_all(notcurses* nc);
 
+    events::EventBus& event_bus() { return event_bus_; }
+    const events::EventBus& event_bus() const { return event_bus_; }
+
 private:
     struct ManagedAnimation {
         std::unique_ptr<Animation> animation;
         AnimationConfig config;
     };
-    std::vector<ManagedAnimation> animations_;
+
+    void register_animation_callbacks(ManagedAnimation& managed_animation);
+
+    std::vector<std::unique_ptr<ManagedAnimation>> animations_;
+    events::EventBus event_bus_;
 };
 
 } // namespace animations
 } // namespace why
+

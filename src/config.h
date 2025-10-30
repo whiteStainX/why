@@ -96,10 +96,11 @@ struct AnimationConfig {
     int wave_tail_length_cols = 6;       // Number of trailing columns for fading tail
     bool wave_alternate_direction = true; // Alternate sweep direction on each activation
     bool wave_direction_right = true;     // Initial sweep direction when not alternating
-    float lightning_novelty_threshold = 0.35f;      // Jensen-Shannon novelty threshold for triggering the wave
+    float lightning_novelty_threshold = 0.35f;      // Cosine-distance novelty threshold for triggering the wave
     float lightning_energy_floor = 0.015f;          // Minimum summed band energy required to evaluate novelty
     float lightning_detection_cooldown_s = 0.65f;   // Cooldown between lightning triggers
     float lightning_novelty_smoothing_s = 0.18f;    // Smoothing horizon for novelty accumulation
+    float lightning_background_smoothing_s = 1.0f;  // Running-average horizon for the background spectrum
     float lightning_activation_decay_s = 0.8f;      // Time for lightning intensity to decay back to zero
     int breathe_points = 64;              // Number of vertices for the breathing shape
     float breathe_min_radius = 6.0f;      // Minimum radius for the breathing circle

@@ -55,10 +55,6 @@ private:
     void update_activation_decay(float delta_time);
 
     SpectralSnapshot analyze_spectrum(const std::vector<float>& bands) const;
-    float compute_js_divergence(const std::vector<float>& current,
-                                const std::vector<float>& previous) const;
-    float compute_flux(const std::vector<float>& current,
-                       const std::vector<float>& previous) const;
     bool evaluate_novelty(const SpectralSnapshot& snapshot,
                           float delta_time,
                           float& out_strength);
@@ -100,13 +96,11 @@ private:
     float detection_cooldown_timer_s_ = 0.0f;
     float novelty_smoothing_s_ = 0.18f;
     float novelty_smoothed_ = 0.0f;
+    float background_smoothing_s_ = 1.0f;
     float activation_decay_s_ = 0.8f;
 
-    std::vector<float> previous_distribution_;
-    float previous_centroid_ = 0.0f;
-    float previous_flatness_ = 0.0f;
-    float previous_crest_ = 0.0f;
-    bool has_previous_signature_ = false;
+    std::vector<float> background_distribution_;
+    bool has_background_signature_ = false;
 };
 
 } // namespace animations

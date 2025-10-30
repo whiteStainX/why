@@ -674,6 +674,13 @@ ConfigLoadResult load_app_config(const std::string& path) {
                            anim_config.lightning_novelty_smoothing_s);
         }
 
+        const auto lightning_background_smoothing_it =
+            raw_anim_config.find("lightning_background_smoothing_s");
+        if (lightning_background_smoothing_it != raw_anim_config.end()) {
+            parse_float32(lightning_background_smoothing_it->second.value,
+                           anim_config.lightning_background_smoothing_s);
+        }
+
         const auto lightning_activation_decay_it =
             raw_anim_config.find("lightning_activation_decay_s");
         if (lightning_activation_decay_it != raw_anim_config.end()) {

@@ -1,4 +1,5 @@
 #include "lightning_wave_animation.h"
+#include "animation_event_utils.h"
 
 #include <algorithm>
 #include <cmath>
@@ -432,6 +433,10 @@ void LightningWaveAnimation::render(notcurses* /*nc*/) {
             ncplane_putstr_yx(plane_, row, static_cast<int>(col), glyph.c_str());
         }
     }
+}
+
+void LightningWaveAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
+    bind_standard_frame_updates(this, config, bus);
 }
 
 } // namespace animations

@@ -31,35 +31,6 @@ std::string clean_string_value(std::string value) {
     return value;
 }
 
-bool has_custom_triggers(const AnimationConfig& config) {
-    return config.trigger_band_index != -1 ||
-           config.trigger_beat_min > 0.0f ||
-           config.trigger_beat_max < 1.0f;
-}
-
-bool evaluate_band_condition(const AnimationConfig& config,
-                             const std::vector<float>& bands) {
-    if (config.trigger_band_index == -1) {
-        return true;
-    }
-
-    const int index = config.trigger_band_index;
-    if (index < 0 || index >= static_cast<int>(bands.size())) {
-        return false;
-    }
-
-    return bands[static_cast<std::size_t>(index)] >= config.trigger_threshold;
-}
-
-bool evaluate_beat_condition(const AnimationConfig& config, float beat_strength) {
-    if (config.trigger_beat_min <= 0.0f && config.trigger_beat_max >= 1.0f) {
-        return true;
-    }
-
-    return beat_strength >= config.trigger_beat_min &&
-           beat_strength <= config.trigger_beat_max;
-}
-
 } // namespace
 
 void AnimationManager::load_animations(notcurses* nc, const AppConfig& app_config) {
@@ -95,43 +66,11 @@ void AnimationManager::load_animations(notcurses* nc, const AppConfig& app_confi
             managed->animation = std::move(new_animation);
 
             managed->animation->bind_events(managed->config, event_bus_);
-            register_animation_callbacks(*managed);
             animations_.push_back(std::move(managed));
         } else {
             // std::cerr << "[AnimationManager::load_animations] Unknown animation type: " << anim_config.type << std::endl;
         }
     }
-}
-
-void AnimationManager::register_animation_callbacks(ManagedAnimation& managed_animation) {
-    if (!managed_animation.animation) {
-        return;
-    }
-
-    ManagedAnimation* managed_ptr = &managed_animation;
-    event_bus_.subscribe<events::FrameUpdateEvent>(
-        [managed_ptr](const events::FrameUpdateEvent& event) {
-            Animation* animation = managed_ptr->animation.get();
-            const AnimationConfig& config = managed_ptr->config;
-
-            bool meets_band = evaluate_band_condition(config, event.bands);
-            bool meets_beat = evaluate_beat_condition(config, event.beat_strength);
-            bool meets_all_conditions = meets_band && meets_beat;
-
-            bool should_be_active = has_custom_triggers(config)
-                                        ? meets_all_conditions
-                                        : config.initially_active;
-
-            if (should_be_active && !animation->is_active()) {
-                animation->activate();
-            } else if (!should_be_active && animation->is_active()) {
-                animation->deactivate();
-            }
-
-            if (animation->is_active()) {
-                animation->update(event.delta_time, event.metrics, event.bands, event.beat_strength);
-            }
-        });
 }
 
 void AnimationManager::update_all(float delta_time,

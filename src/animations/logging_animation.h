@@ -32,6 +32,8 @@ public:
     int get_z_index() const override { return z_index_; }
     ncplane* get_plane() const override { return plane_; }
 
+    void bind_events(const AnimationConfig& config, events::EventBus& bus) override;
+
 private:
     struct Condition {
         enum class Type {

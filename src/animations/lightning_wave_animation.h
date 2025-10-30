@@ -27,6 +27,8 @@ public:
     int get_z_index() const override { return z_index_; }
     ncplane* get_plane() const override { return plane_; }
 
+    void bind_events(const AnimationConfig& config, events::EventBus& bus) override;
+
 private:
     struct ColumnState {
         float intensity = 0.0f;

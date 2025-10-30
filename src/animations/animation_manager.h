@@ -35,8 +35,6 @@ private:
         AnimationConfig config;
     };
 
-    void register_animation_callbacks(ManagedAnimation& managed_animation);
-
     std::vector<std::unique_ptr<ManagedAnimation>> animations_;
     events::EventBus event_bus_;
 };

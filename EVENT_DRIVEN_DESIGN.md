@@ -1,94 +1,90 @@
 # Event-Driven Architecture
 
-This document describes the event-driven architecture of the `why` audio visualizer's animation system. This design improves efficiency, promotes strong decoupling between components, and enhances flexibility.
+This document describes the event-driven architecture of the `why` audio visualizer. This design promotes strong decoupling, efficiency, and flexibility.
 
 ---
 
 ## 1. System Overview
 
-Instead of a centralized manager polling every animation for state changes, the system is built around an **Event Bus**. Components are decoupled into three main roles:
+The architecture is built around an **Event Bus** that decouples components into three roles:
 
-*   **Emitters (Publishers):** Components that generate data and publish it to the Event Bus as a named event. They have no knowledge of who, if anyone, is listening.
-*   **Event Bus (Dispatcher):** A central hub that receives all published events and forwards them to any subscribers registered for that specific event type.
-*   **Subscribers (Listeners):** Components (primarily animations) that subscribe to the specific events they care about. They execute their logic only when they receive a relevant event.
+*   **Emitters (Publishers):** Components that generate data and publish it as a named event. They have no knowledge of who is listening.
+*   **Event Bus (Dispatcher):** A central hub that receives all events and forwards them to any subscribers for that event type.
+*   **Subscribers (Listeners):** Components (primarily animations) that subscribe to the specific events they care about and execute their logic only when they receive a relevant event.
 
 ### Architecture Diagram
 
 ```
 +-----------+      publishes       +--------------------+      notifies      +--------------------+
 | DspEngine |--------------------->|                    |------------------->| Animation 1        |
-| (Emitter) |   BeatDetectedEvent  |                    |                    | (Subscribes to Beat)|
-+-----------+                      |                    |                    +--------------------+
-                                   |     Event Bus      |
-                                   |                    |                    +--------------------+
-+------------------+   publishes   |                    |      notifies      | Animation 2        |
-| AnimationManager |-------------->|                    |------------------->| (Subscribes to     |
-| (Emitter)        | FrameUpdateEvent |                    |                    |  FrameUpdate)      |
-+------------------+               +--------------------+                    +--------------------+
+| (Emitter) | (Beat, Flux, etc.)   |                    |                    | (Subscribes to     |
++-----------+                      |                    |                    |  specific events)  |
+                                   |     Event Bus      |                    +--------------------+
+                                   |                    |
++------------------+   publishes   |                    |      notifies      +--------------------+
+| AnimationManager |-------------->|                    |------------------->| Animation 2        |
+| (Emitter)        | FrameUpdateEvent |                    |                    | (Subscribes to     |
++------------------+               +--------------------+                    |  FrameUpdate)      |
 ```
 
 ### Key Advantages
 
-*   **Efficiency:** An animation's code is only executed when an event it has subscribed to occurs. An animation that only reacts to strong beats will consume no resources on frames where no beat is detected.
-*   **Decoupling:** Emitters and subscribers are completely independent. The `DspEngine` doesn't know what animations exist, and animations don't know where the audio data comes from.
-*   **Extensibility:** New animations can be added without modifying any central manager. They simply subscribe to the events they need. New event types can also be added without affecting existing components.
+*   **Efficiency:** An animation's code only runs when an event it has subscribed to occurs.
+*   **Decoupling:** The `DspEngine` and `AnimationManager` are completely independent of the animations.
+*   **Extensibility:** New animations can be added without modifying core systems. They simply subscribe to the events they need.
 
 ---
 
 ## 2. Core Components & Event Flow
 
 ### Emitters
-*   **`AnimationManager` (in the main loop):** This is the primary emitter. On every frame, it publishes:
-    1.  `BeatDetectedEvent`: Contains the current beat strength.
-    2.  `FrameUpdateEvent`: A larger event containing `delta_time`, `AudioMetrics`, and the full vector of FFT band data.
 
-### Event Flow Example: A Beat-Triggered Animation
+*   **`DspEngine`**: The primary source of audio analysis events. After processing an audio frame, it publishes several granular events, including:
+    *   `BeatDetectedEvent`
+    *   `SpectralFluxEvent`
+    *   `SpectralNoveltyEvent`
+*   **`AnimationManager`**: Publishes the general `FrameUpdateEvent` on every frame, which provides timing and the raw FFT band data for animations that need it.
 
-1.  The `main` loop gets the latest beat strength from the `DspEngine`.
-2.  It calls `animation_manager.update_all()`, passing in the data.
-3.  The `AnimationManager` publishes a `BeatDetectedEvent` to the `EventBus`.
-4.  The `EventBus` checks its list of subscribers for this event type.
-5.  It finds that `LightningWaveAnimation` has subscribed to it.
-6.  It invokes the handler function provided by `LightningWaveAnimation`, which then runs its activation logic.
-7.  Other animations that did not subscribe are not affected and their code is not executed.
+### Event Flow Example: A Novelty-Triggered Animation
+
+1.  The `DspEngine` processes an audio frame and its novelty detection algorithm identifies a significant change in the audio's texture.
+2.  It publishes a `SpectralNoveltyEvent` with a `strength` value to the `EventBus`.
+3.  The `EventBus` finds that `LightningWaveAnimation` has subscribed to this event.
+4.  It invokes the handler in `LightningWaveAnimation`, which then uses the `strength` to trigger its visual effect.
+5.  Other animations that did not subscribe are not affected.
 
 ---
 
 ## 3. Implementation for Developers
 
-The key to integrating a new animation into this system is the `bind_events` method, which is part of the `Animation` interface.
+The key to this system is the `bind_events` method in the `Animation` interface, where an animation subscribes to the events it needs.
 
-### `Animation::bind_events`
+#### Subscribing to a DSP Event
 
-This virtual method is called once when your animation is loaded. Its purpose is to subscribe your animation to all the events it needs to function.
-
-#### The Easy Way: Standard Triggers
-
-For animations that use the common beat/band trigger conditions from `why.toml`, a helper function is provided.
+For an animation that should react to a specific audio phenomenon, subscribe directly to the event from the `DspEngine`.
 
 ```cpp
-// In MyAnimation.cpp
-#include "animation_event_utils.h"
-
-void MyAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
-    // This one line handles activation, deactivation, and calls update() for you.
-    bind_standard_frame_updates(this, config, bus);
+// For an animation that triggers on spectral novelty
+void MyNoveltyAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
+    bus.subscribe<events::SpectralNoveltyEvent>([this, config](const auto& event) {
+        if (event.strength > config.my_trigger_threshold) {
+            this->activate();
+        }
+    });
 }
 ```
 
-#### The Advanced Way: Custom Subscriptions
+#### Subscribing to Frame Updates
 
-For more efficient or unique animations, you can subscribe to events directly. This gives you precise control.
+For animations that need to run logic on every single frame (e.g., for smooth movement), subscribe to `FrameUpdateEvent`.
 
 ```cpp
-// For an animation that only flashes on a beat.
-void MyFlashAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
-    // Subscribe ONLY to the beat event.
-    bus.subscribe<events::BeatDetectedEvent>([this, config](const events::BeatDetectedEvent& event) {
-        if (event.strength > config.trigger_threshold) {
-            this->do_flash_effect();
+// For an animation with continuous movement
+void MyMovingAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
+    bus.subscribe<events::FrameUpdateEvent>([this](const auto& event) {
+        if (this->is_active()) {
+            this->update(event.delta_time);
         }
     });
-    // This animation is now highly efficient, as its code only runs when a beat occurs.
 }
 ```

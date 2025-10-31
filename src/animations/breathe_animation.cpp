@@ -1,5 +1,6 @@
 #include "breathe_animation.h"
 #include "animation_event_utils.h"
+#include "glyph_utils.h"
 
 #include <algorithm>
 #include <cmath>
@@ -13,39 +14,11 @@ constexpr const char* kDefaultGlyphFilePath = "assets/breathe_animation.txt";
 constexpr const char* kDefaultGlyphs = " .oO@#";
 constexpr float kTwoPi = 6.28318530717958647692f;
 
-std::vector<std::string> parse_glyphs(const std::string& source) {
-    std::vector<std::string> glyphs;
-    glyphs.reserve(source.size());
-
-    for (std::size_t i = 0; i < source.size();) {
-        unsigned char lead = static_cast<unsigned char>(source[i]);
-        std::size_t length = 1;
-        if ((lead & 0x80u) == 0x00u) {
-            length = 1;
-        } else if ((lead & 0xE0u) == 0xC0u && i + 1 < source.size()) {
-            length = 2;
-        } else if ((lead & 0xF0u) == 0xE0u && i + 2 < source.size()) {
-            length = 3;
-        } else if ((lead & 0xF8u) == 0xF0u && i + 3 < source.size()) {
-            length = 4;
-        } else {
-            ++i;
-            continue;
-        }
-
-        glyphs.emplace_back(source.substr(i, length));
-        i += length;
-    }
-
-    glyphs.erase(std::remove_if(glyphs.begin(), glyphs.end(), [](const std::string& g) {
-                       return g.empty();
-                   }),
-                 glyphs.end());
-
+std::vector<std::string> parse_glyphs_or_default(const std::string& source) {
+    auto glyphs = parse_glyphs(source);
     if (glyphs.empty()) {
         glyphs.emplace_back("#");
     }
-
     return glyphs;
 }
 
@@ -60,7 +33,7 @@ float lerp(float from, float to, float alpha) {
 } // namespace
 
 BreatheAnimation::BreatheAnimation()
-    : glyphs_(parse_glyphs(kDefaultGlyphs)),
+    : glyphs_(parse_glyphs_or_default(kDefaultGlyphs)),
       glyphs_file_path_(kDefaultGlyphFilePath),
       rng_(std::random_device{}()) {}
 
@@ -78,7 +51,7 @@ void BreatheAnimation::init(notcurses* nc, const AppConfig& config) {
     }
 
     glyphs_file_path_ = kDefaultGlyphFilePath;
-    glyphs_ = parse_glyphs(kDefaultGlyphs);
+    glyphs_ = parse_glyphs_or_default(kDefaultGlyphs);
     glyphs_loaded_ = false;
 
     plane_rows_ = 0u;
@@ -265,13 +238,8 @@ bool BreatheAnimation::load_glyphs_from_file(const std::string& path) {
     }
 
     std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    auto parsed = parse_glyphs(content);
-    if (!parsed.empty()) {
-        glyphs_ = std::move(parsed);
-        return true;
-    }
-
-    return false;
+    glyphs_ = parse_glyphs_or_default(content);
+    return !glyphs_.empty();
 }
 
 void BreatheAnimation::ensure_glyphs_loaded() {
@@ -291,7 +259,7 @@ void BreatheAnimation::ensure_glyphs_loaded() {
         }
     }
 
-    glyphs_ = parse_glyphs(kDefaultGlyphs);
+    glyphs_ = parse_glyphs_or_default(kDefaultGlyphs);
     glyphs_loaded_ = true;
 }
 

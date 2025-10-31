@@ -756,8 +756,9 @@ void LoggingAnimation::deactivate() {
 
 void LoggingAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
     bind_standard_frame_updates(this, config, bus);
-    bus.subscribe<events::BeatDetectedEvent>(
+    auto handle = bus.subscribe<events::BeatDetectedEvent>(
         [this](const events::BeatDetectedEvent& event) { handle_beat_event(event.strength); });
+    track_subscription(std::move(handle));
 }
 
 } // namespace animations

@@ -10,28 +10,10 @@
 #include "breathe_animation.h"
 #include "logging_animation.h"
 
+#include "../config/raw_config.h"
+
 namespace why {
 namespace animations {
-
-namespace {
-std::string clean_string_value(std::string value) {
-    size_t first = value.find_first_not_of(" \t\n\r\f\v");
-    if (std::string::npos == first) {
-        return "";
-    }
-
-    size_t last = value.find_last_not_of(" \t\n\r\f\v");
-    value = value.substr(first, (last - first + 1));
-
-    if (value.length() >= 2 &&
-        ((value.front() == '\"' && value.back() == '\"') ||
-         (value.front() == '\'' && value.back() == '\''))) {
-        value = value.substr(1, value.length() - 2);
-    }
-    return value;
-}
-
-} // namespace
 
 void AnimationManager::load_animations(notcurses* nc, const AppConfig& app_config) {
     event_bus_.reset();
@@ -40,7 +22,7 @@ void AnimationManager::load_animations(notcurses* nc, const AppConfig& app_confi
 
     for (const auto& anim_config : app_config.animations) {
         std::unique_ptr<Animation> new_animation;
-        std::string cleaned_type = clean_string_value(anim_config.type);
+        std::string cleaned_type = config::detail::sanitize_string_value(anim_config.type);
 
         if (cleaned_type == "RandomText") {
             new_animation = std::make_unique<RandomTextAnimation>();
@@ -60,6 +42,7 @@ void AnimationManager::load_animations(notcurses* nc, const AppConfig& app_confi
 
         if (new_animation) {
             new_animation->init(nc, app_config);
+            new_animation->clear_event_subscriptions();
 
             auto managed = std::make_unique<ManagedAnimation>();
             managed->config = anim_config;

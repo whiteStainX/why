@@ -3,6 +3,7 @@
 #include "../config.h"
 #include "../events/event_bus.h"
 #include "../events/frame_events.h"
+#include "animation.h"
 
 namespace why {
 namespace animations {
@@ -41,7 +42,7 @@ void bind_standard_frame_updates(AnimationT* animation,
                                  const AnimationConfig& config,
                                  events::EventBus& bus) {
     AnimationConfig captured_config = config;
-    bus.subscribe<events::FrameUpdateEvent>(
+    auto handle = bus.subscribe<events::FrameUpdateEvent>(
         [animation, captured_config](const events::FrameUpdateEvent& event) {
             const bool meets_band = evaluate_band_condition(captured_config, event.bands);
             const bool meets_beat = evaluate_beat_condition(captured_config, event.beat_strength);
@@ -62,6 +63,7 @@ void bind_standard_frame_updates(AnimationT* animation,
                                   event.beat_strength);
             }
         });
+    animation->track_subscription(std::move(handle));
 }
 
 } // namespace animations

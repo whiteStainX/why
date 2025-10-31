@@ -1,20 +1,21 @@
 #pragma once
 
+#include <utility>
 #include <vector>
 
 #include <notcurses/notcurses.h>
 
 #include "../audio_engine.h"
 #include "../config.h" // Include AppConfig
-
-namespace why {
-namespace events {
-class EventBus;
-} // namespace events
-} // namespace why
+#include "../events/event_bus.h"
 
 namespace why {
 namespace animations {
+
+template<typename AnimationT>
+void bind_standard_frame_updates(AnimationT* animation,
+                                 const AnimationConfig& config,
+                                 events::EventBus& bus);
 
 class Animation {
 public:
@@ -39,6 +40,26 @@ public:
         (void)config;
         (void)bus;
     }
+
+    void clear_event_subscriptions() {
+        for (auto& handle : event_subscriptions_) {
+            handle.reset();
+        }
+        event_subscriptions_.clear();
+    }
+
+protected:
+    void track_subscription(events::EventBus::SubscriptionHandle handle) {
+        event_subscriptions_.push_back(std::move(handle));
+    }
+
+private:
+    std::vector<events::EventBus::SubscriptionHandle> event_subscriptions_;
+
+    template<typename AnimationT>
+    friend void bind_standard_frame_updates(AnimationT* animation,
+                                            const AnimationConfig& config,
+                                            events::EventBus& bus);
 };
 
 } // namespace animations

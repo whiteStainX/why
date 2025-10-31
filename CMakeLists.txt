@@ -18,6 +18,9 @@ set(WHY_SOURCES
   src/main.cpp
   src/audio_engine.cpp
   src/config.cpp
+  src/config/raw_config.cpp
+  src/config/value_parsers.cpp
+  src/config/animation_config_parser.cpp
   src/plugins.cpp
   src/renderer.cpp
   src/dsp.cpp

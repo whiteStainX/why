@@ -1,5 +1,6 @@
 #include "lightning_wave_animation.h"
 #include "animation_event_utils.h"
+#include "glyph_utils.h"
 
 #include <algorithm>
 #include <cmath>
@@ -26,39 +27,11 @@ constexpr float kDefaultDetectionCooldown = 0.65f;
 constexpr float kDefaultActivationDecay = 0.8f;
 constexpr float kEnergyEpsilon = 1e-6f;
 
-std::vector<std::string> parse_glyphs(const std::string& source) {
-    std::vector<std::string> glyphs;
-    glyphs.reserve(source.size());
-
-    for (std::size_t i = 0; i < source.size();) {
-        unsigned char lead = static_cast<unsigned char>(source[i]);
-        std::size_t length = 1;
-        if ((lead & 0x80u) == 0x00u) {
-            length = 1;
-        } else if ((lead & 0xE0u) == 0xC0u && i + 1 < source.size()) {
-            length = 2;
-        } else if ((lead & 0xF0u) == 0xE0u && i + 2 < source.size()) {
-            length = 3;
-        } else if ((lead & 0xF8u) == 0xF0u && i + 3 < source.size()) {
-            length = 4;
-        } else {
-            ++i;
-            continue;
-        }
-
-        glyphs.emplace_back(source.substr(i, length));
-        i += length;
-    }
-
-    glyphs.erase(std::remove_if(glyphs.begin(), glyphs.end(), [](const std::string& g) {
-                       return g.empty();
-                   }),
-                 glyphs.end());
-
+std::vector<std::string> parse_glyphs_or_default(const std::string& source) {
+    auto glyphs = parse_glyphs(source);
     if (glyphs.empty()) {
         glyphs.emplace_back("#");
     }
-
     return glyphs;
 }
 
@@ -69,7 +42,7 @@ float clamp01(float value) {
 } // namespace
 
 LightningWaveAnimation::LightningWaveAnimation()
-    : glyphs_(parse_glyphs(kDefaultGlyphs)),
+    : glyphs_(parse_glyphs_or_default(kDefaultGlyphs)),
       glyphs_file_path_(kDefaultGlyphFilePath),
       alternate_direction_(true),
       next_direction_right_(true),
@@ -104,7 +77,7 @@ void LightningWaveAnimation::init(notcurses* nc, const AppConfig& config) {
     }
 
     glyphs_file_path_ = kDefaultGlyphFilePath;
-    glyphs_ = parse_glyphs(kDefaultGlyphs);
+    glyphs_ = parse_glyphs_or_default(kDefaultGlyphs);
     glyphs_loaded_ = false;
     z_index_ = 0;
     is_active_ = false;
@@ -259,7 +232,7 @@ bool LightningWaveAnimation::load_glyphs_from_file(const std::string& path) {
     std::ostringstream buffer;
     buffer << file.rdbuf();
     const std::string contents = buffer.str();
-    glyphs_ = parse_glyphs(contents);
+    glyphs_ = parse_glyphs_or_default(contents);
     return !glyphs_.empty();
 }
 
@@ -277,7 +250,7 @@ void LightningWaveAnimation::ensure_glyphs_loaded() {
             return;
         }
     }
-    glyphs_ = parse_glyphs(kDefaultGlyphs);
+    glyphs_ = parse_glyphs_or_default(kDefaultGlyphs);
     glyphs_loaded_ = true;
 }
 

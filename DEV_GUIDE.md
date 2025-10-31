@@ -2,7 +2,7 @@
 
 Welcome, creator! This guide provides a framework for developing new animations for the `why` audio visualizer. By following these principles, you can focus on the creative aspects of your animation while the system handles the boilerplate.
 
-Our architecture is event-driven. This means your animation doesn't need to constantly check for data; instead, it subscribes to events and reacts when they happen. This is efficient and keeps your code clean and decoupled.
+Our architecture is event-driven. This means your animation subscribes to events it cares about and only runs its logic when those events occur. This is efficient and keeps your code clean and decoupled.
 
 ---
 
@@ -24,17 +24,14 @@ Our architecture is event-driven. This means your animation doesn't need to cons
 
     class MyAnimation : public Animation {
     public:
-        // Constructor, Destructor
-        MyAnimation();
-        ~MyAnimation() override;
+        // ... Constructor, Destructor ...
 
         // --- Core Animation Interface ---
         void init(notcurses* nc, const AppConfig& config) override;
         void bind_events(const AnimationConfig& config, events::EventBus& bus) override;
         void update(float dt, const AudioMetrics& m, const std::vector<float>& b, float beat) override;
         void render(notcurses* nc) override;
-        void activate() override;
-        void deactivate() override;
+        // ... activate(), deactivate(), etc. ...
     };
 
     }
@@ -72,56 +69,56 @@ To make your animation customizable, add parameters to `why.toml` and the C++ co
 
 3.  **Use in Your Code:** In your animation's `init` method, read the value from the config. You will need to loop through the animations in the `app_config` to find your own configuration block.
 
-    ```cpp
-    // In MyAnimation::init(...)
-    for (const auto& anim_config : config.animations) {
-        if (anim_config.type == "MyAnimation") {
-            this->speed_ = anim_config.my_animation_speed; // Read the value
-            break;
-        }
-    }
-    ```
-
 ---
 
 ## 3. Event Handling: The Core of Your Animation
 
-Your animation's logic is driven by events. The `bind_events` method is where you subscribe to the events you care about.
+Your animation's logic is driven by events. The `bind_events` method is where you subscribe to the events you care about. The `DspEngine` publishes several useful events for you.
 
-### The Easy Way: Standard Triggers
+### Available DSP Events (from `src/events/audio_events.h`)
 
-If your animation should activate/deactivate based on the standard `trigger_beat_*` and `trigger_band_*` parameters in `why.toml`, you can use a simple helper function.
+*   `BeatDetectedEvent`: Fires when a beat is detected. Contains `strength`.
+*   `SpectralFluxEvent`: Represents the change in the spectrum from the last frame.
+*   `SpectralNoveltyEvent`: A high-level event that fires when the *texture* or *timbre* of the audio changes significantly (e.g., a new instrument or vocal track appears).
 
-```cpp
-// In MyAnimation.cpp
-#include "animation_event_utils.h" // Include the helper
+### Choosing Your Triggering Strategy
 
-void MyAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
-    // This automatically handles activation, deactivation, and calls update() for you.
-    bind_standard_frame_updates(this, config, bus);
-}
-```
+#### Option 1 (Recommended): Subscribe to Specific DSP Events
 
-With this single line, your animation will respect the standard trigger configurations. Your main job is to implement the `update()` and `render()` methods.
+This is the most efficient and robust approach. Subscribe directly to the audio phenomenon you want to react to.
 
-### The Advanced Way: Custom Triggers
-
-For more efficient or unique animations, you can subscribe to specific events yourself. This gives you full control.
-
-**Example:** An animation that only creates a flash effect on a strong beat and does nothing else.
+**Example:** An animation that triggers on a significant change in the music's texture.
 
 ```cpp
-// In MyFlashAnimation.cpp
-void MyFlashAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
-    // Subscribe ONLY to the beat event.
-    bus.subscribe<events::BeatDetectedEvent>([this, config](const events::BeatDetectedEvent& event) {
-        if (event.strength > config.trigger_threshold) {
-            this->do_flash_effect(); // Call a custom method
+// In MyNoveltyAnimation.cpp
+void MyNoveltyAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
+    // Subscribe ONLY to the novelty event.
+    bus.subscribe<events::SpectralNoveltyEvent>([this, config](const auto& event) {
+        if (event.strength > config.my_trigger_threshold) {
+            this->activate(); // Activate based on a meaningful audio event
         }
     });
 
-    // Note: We DO NOT subscribe to FrameUpdateEvent, making this very efficient.
-    // The update() method for this animation might even be empty.
+    // Also subscribe to FrameUpdateEvent for smooth visual updates if needed.
+    bus.subscribe<events::FrameUpdateEvent>([this](const auto& event) {
+        if (this->is_active()) {
+            this->update(event.delta_time); // e.g., move the animation
+        }
+    });
+}
+```
+
+#### Option 2: Use the Generic Frame Update Helper
+
+If your animation's logic truly depends on the raw FFT `bands` data from every single frame, you can use the standard helper. This is less efficient but useful for visualizations like a bar graph.
+
+```cpp
+// In MyBarGraphAnimation.cpp
+#include "animation_event_utils.h" // Include the helper
+
+void MyBarGraphAnimation::bind_events(const AnimationConfig& config, events::EventBus& bus) {
+    // This automatically handles activation based on config and calls update() on every frame.
+    bind_standard_frame_updates(this, config, bus);
 }
 ```
 
@@ -129,23 +126,18 @@ void MyFlashAnimation::bind_events(const AnimationConfig& config, events::EventB
 
 ## 4. Rendering and Using Assets
 
-*   **Rendering Plane:** In your `init` method, you should create an `ncplane` for your animation to draw on. Store it as a member variable (`ncplane* plane_ = nullptr;`). Remember to call `ncplane_destroy(plane_)` in your destructor!
+*   **Rendering Plane:** In your `init` method, create an `ncplane` for your animation to draw on. Store it as a member variable (`ncplane* plane_ = nullptr;`) and destroy it in your destructor.
 
-*   **Drawing:** In your `render` method, use your `plane_` to draw. You can use functions like `ncplane_putstr_yx`, `ncplane_set_fg_rgb8`, etc. Erase the plane at the start of the render function (`ncplane_erase(plane_)`).
+*   **Drawing:** In your `render` method, use your `plane_` to draw. Erase the plane at the start of the render function (`ncplane_erase(plane_)`).
 
-*   **Assets:** To use an external file (e.g., for ASCII art):
-    1.  Place the file in the `assets/` directory.
-    2.  Add a configuration parameter to `why.toml` for the file path (e.g., `my_art_file = "assets/my_art.txt"`).
-    3.  In your `init` method, read the path from the config and use a standard C++ `ifstream` to load the file content.
+*   **Assets:** To use an external file (e.g., for ASCII art), add a path parameter to `why.toml`, read it in your `init` method, and load the file using a C++ `ifstream`.
 
 ---
 
 ## 5. Golden Rules for Clean Development
 
-To ensure the project remains stable and easy to maintain, please follow these rules:
-
 *   **DO NOT** modify `AnimationManager`, `DspEngine`, or `main.cpp` for your animation's logic.
 *   **DO** contain all logic within your animation's class.
-*   **DO** use the `EventBus` to get data. Never try to get a direct pointer to another component like the `DspEngine`.
-*   **DO** define all custom options in `config.h` and `why.toml`. Avoid hard-coded "magic numbers" in your animation logic.
+*   **DO** use the `EventBus` to get data. Subscribe to the most specific event that meets your needs.
+*   **DO** define all custom options in `config.h` and `why.toml`. Avoid hard-coded "magic numbers".
 *   **DO** clean up resources. If you create an `ncplane`, destroy it in your destructor.

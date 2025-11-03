@@ -32,3 +32,6 @@ compile_commands.json
 
 # assets
 /assets/*
+
+#config 
+why.toml
